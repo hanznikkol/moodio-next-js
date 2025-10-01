@@ -1,0 +1,15 @@
+@keyframes pulseColors {
+  0%   { background-color: rgba(239,68,68,0); }      /* Start transparent red */
+  5%   { background-color: rgba(239,68,68,0.7); }    /* Fade in red */
+  20%  { background-color: rgba(59,130,246,0.7); }   /* Blue */
+  40%  { background-color: rgba(34,197,94,0.7); }    /* Green */
+  60%  { background-color: rgba(168,85,247,0.7); }   /* Purple */
+  80%  { background-color: rgba(250,204,21,0.7); }   /* Yellow */
+  95%  { background-color: rgba(239,68,68,0.7); }    /* Fade back to red */
+  100% { background-color: rgba(239,68,68,0); }      /* Transparent red for smooth loop */
+}
+
+.edges-glow {
+  opacity: 1; 
+  animation: pulseColors 20s infinite linear;
+}
