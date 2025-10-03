@@ -9,22 +9,37 @@ import AnalyzeButton from "./components/AnalyzeButton";
 
 export default function Home() {
   const [file, setFile] = useState<File | null>(null)
+  const [loading, setLoading] = useState(false)
   const [showResults, setShowResults] = useState(false);
+  const [moodAnalysis, setMoodAnalysis] = useState<{[key: string]: number} | null>(null);
 
   const handleAnalyze = () => {
-    setShowResults(true);
-  };
-  
-  //static data
-  //add real data later
-  const moodAnalysis = {
-    happy: .70,
-    sad: .15,
-    dreamy: .40,
-    energetic: .85,
-    chill: .55,
+      if (!file) {
+        alert("Please upload a song first 🎵");
+        return; 
+      }
+      setLoading(true)
+      setTimeout(() => {
+          const analysis = {
+            happy: Math.random(),
+            sad: Math.random(),
+            dreamy: Math.random(),
+            energetic: Math.random(),
+            chill: Math.random(),
+          };  
+          console.log("Analyzing file:", file.name);
+          setMoodAnalysis(analysis);
+          setLoading(false);
+          setShowResults(true);
+      }, 1500)
   };
 
+  const handleReset = () => {
+    setMoodAnalysis(null)
+    setShowResults(false)
+    setLoading(false)
+  }
+  
   return (
     <div className="flex flex-col items-center p-8 w-full gap-8">
       {/* Header */}
@@ -32,14 +47,27 @@ export default function Home() {
         <h1 className="text-6xl font-bold text-white">Moodio</h1>
         <p className="text-white text-center">Upload a song to see its mood</p>
       </div>
+
       {/* Upload Files */}
-      <AudioUpload file={file} setFile={setFile}/>
+      <AudioUpload file={file} setFile={setFile} onReset={handleReset}/>
       {/* Audio Preview */}
       {file && <AudioPreview file={file}/>}
+      
+      {/* Hides when Analyzing */}
+      {!loading && !showResults && (
+        <AnalyzeButton onAnalyze={handleAnalyze}/>
+      )}
+      
+      {/* Loading */}
+      {loading && (
+        <div className="flex items-center gap-2 text-white">
+          <div className="w-5 h-5 border-4 border-white border-t-transparent rounded-full animate-spin"></div>
+          <span>Analyzing...</span>
+        </div>
+      )}
 
-      <AnalyzeButton onAnalyze={() => {}}/>
       {/* Result Analysis */}
-      {file && showResults && (
+      {file && showResults && moodAnalysis &&(
         <>
           <MoodBars analysis={moodAnalysis} />
           <Recommendation />

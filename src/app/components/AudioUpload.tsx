@@ -1,28 +1,36 @@
 "use client";
-import { Upload } from "lucide-react";
+import { Upload, X } from "lucide-react";
 import { useState } from "react";
 
 interface AudioUploadProps {
     file: File | null;
     setFile: (file: File | null) => void
+    onReset?: () => void
 }
 
-export default function AudioUpload({ file, setFile } : AudioUploadProps) {
+export default function AudioUpload({ file, setFile, onReset } : AudioUploadProps) {
 
 const [isDragging, setIsDragging] = useState(false)
 
 // Handles File Changes
 const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-        const file = e.target.files[0]
+        const file = e.target.files[0];
+
+        // Wrong File Type
         if (!file.type.startsWith("audio/")) {
-            alert("Only audio files are allowed! 🎵")
-            e.target.value = ""
-            return
+            alert("Only audio files are allowed! 🎵");
+            e.target.value = "";
+            return;
         }
-        setFile(file)
+        onReset?.(); 
+        setFile(file);
+    } else {
+        // User cleared the file input
+        setFile(null);
+        onReset?.();
     }
-}
+};
 
 // Handles Drag/Drop Event
 const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
@@ -38,6 +46,7 @@ const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
         setFile(file)
     }
 }
+
 const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault()
     if(!e.currentTarget.contains(e.relatedTarget as Node)) setIsDragging(false)
@@ -61,6 +70,16 @@ return (
             </div>
         )}
 
+        {/* Remove file button */}
+        {file && (
+        <button
+            onClick={() => setFile(null)}
+            className="absolute top-3 right-3 text-white bg-red-600 hover:bg-red-700 px-1 py-1 rounded text-sm transition"
+        >
+            <X/>
+        </button>
+        )}  
+
         {/* Drag text */}
         <p className="mb-4 text-center select-none">
             {file?.name ? `Selected File: ${file?.name}` : "Drag & drop a song here or click below"}
@@ -73,6 +92,7 @@ return (
             className="hidden"
             id="audio-upload"
         />
+        {/* Button for Upload or Change File */}
         <label
             htmlFor="audio-upload"
             className="flex items-center gap-2 px-6 py-3 bg-purple-600 rounded-full cursor-pointer hover:bg-purple-700 transition text-white font-medium z-10"
