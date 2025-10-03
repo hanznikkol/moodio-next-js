@@ -11,6 +11,7 @@ export default function AudioUpload({ file, setFile } : AudioUploadProps) {
 
 const [isDragging, setIsDragging] = useState(false)
 
+// Handles File Changes
 const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
         const file = e.target.files[0]
@@ -23,9 +24,11 @@ const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     }
 }
 
+// Handles Drag/Drop Event
 const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault()
     setIsDragging(false);
+    // if the file is not "audio/ or any mp3 files" return error
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
         const file = e.dataTransfer.files[0]
         if (!file.type.startsWith("audio/")) {
@@ -35,12 +38,10 @@ const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
         setFile(file)
     }
 }
-
 const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault()
     if(!e.currentTarget.contains(e.relatedTarget as Node)) setIsDragging(false)
 }
-
 const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault()
     setIsDragging(true)
@@ -53,7 +54,7 @@ return (
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
     > 
-        {/* Drop your file */}
+        {/* Drop your file overlay*/}
         {isDragging && (
             <div className="absolute inset-0 bg-black/60 flex items-center justify-center z-20">
                 <p className="text-white text-lg font-medium">Drop your file here</p>
@@ -72,8 +73,6 @@ return (
             className="hidden"
             id="audio-upload"
         />
-
-        {/* Center button with icon */}
         <label
             htmlFor="audio-upload"
             className="flex items-center gap-2 px-6 py-3 bg-purple-600 rounded-full cursor-pointer hover:bg-purple-700 transition text-white font-medium z-10"

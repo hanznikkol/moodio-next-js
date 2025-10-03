@@ -9,6 +9,7 @@
   100% { background-color: rgba(239,68,68,0); }      /* Transparent red for smooth loop */
 }
 
+/* Animation Time and Type */
 .edges-glow {
   opacity: 1; 
   animation: pulseColors 20s infinite linear;
