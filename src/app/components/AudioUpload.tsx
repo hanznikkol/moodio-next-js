@@ -74,7 +74,7 @@ return (
         {file && (
         <button
             onClick={() => setFile(null)}
-            className="absolute top-3 right-3 text-white bg-red-600 hover:bg-red-700 px-1 py-1 rounded text-sm transition"
+            className="absolute top-3 right-3 text-white bg-red-600 hover:bg-red-700 px-1 py-1 rounded text-sm transition hover:cursor-pointer"
         >
             <X/>
         </button>
@@ -82,7 +82,7 @@ return (
 
         {/* Drag text */}
         <p className="mb-4 text-center select-none">
-            {file?.name ? `Selected File: ${file?.name}` : "Drag & drop a song here or click below"}
+            {file?.name ? (<> Selected File: <span className="font-bold">{file.name}</span> </>): "Drag & drop a song here or click below"}
         </p>
 
         <input 

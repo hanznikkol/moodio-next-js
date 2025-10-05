@@ -6,6 +6,7 @@ import AudioUpload from "./components/AudioUpload";
 import MoodBars from "./components/MoodBars";
 import Recommendation from "./components/Recommendation";
 import AnalyzeButton from "./components/AnalyzeButton";
+import SpotifyButton from "./components/SpotifyButton";
 
 export default function Home() {
   const [file, setFile] = useState<File | null>(null)
@@ -49,12 +50,17 @@ export default function Home() {
       </div>
 
       {/* Upload Files */}
-      <AudioUpload file={file} setFile={setFile} onReset={handleReset}/>
+      <AudioUpload file={file} setFile={setFile} onReset={handleReset}/>  
       {/* Audio Preview */}
       {file && <AudioPreview file={file}/>}
       
+      <span className="text-white">— or —</span>
+
+      {/* Connect Spotify */}
+      <SpotifyButton onClickConnect={() => {}}/>
+
       {/* Hides when Analyzing */}
-      {!loading && !showResults && (
+      {!loading && !showResults && file && (
         <AnalyzeButton onAnalyze={handleAnalyze}/>
       )}
       
