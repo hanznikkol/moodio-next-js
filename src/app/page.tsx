@@ -1,12 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import AudioPreview from "./components/AudioPreview";
-import AudioUpload from "./components/AudioUpload";
-import MoodBars from "./components/MoodBars";
-import Recommendation from "./components/Recommendation";
-import AnalyzeButton from "./components/AnalyzeButton";
-import SpotifyButton from "./components/SpotifyButton";
+import AudioPreview from "./main_components/AudioPreview";
+import AudioUpload from "./main_components/AudioUpload";
+import MoodBars from "./main_components/MoodBars";
+import Recommendation from "./main_components/Recommendation";
+import AnalyzeButton from "./main_components/Buttons/AnalyzeButton";
+import SpotifyButton from "./main_components/Buttons/SpotifyButton";
+import { toast } from "sonner";
 
 export default function Home() {
   const [file, setFile] = useState<File | null>(null)
@@ -14,9 +15,10 @@ export default function Home() {
   const [showResults, setShowResults] = useState(false);
   const [moodAnalysis, setMoodAnalysis] = useState<{[key: string]: number} | null>(null);
 
+  // Analyze 
   const handleAnalyze = () => {
       if (!file) {
-        alert("Please upload a song first 🎵");
+        toast.warning("Please upload a song first 🎵");
         return; 
       }
       setLoading(true)
@@ -35,6 +37,7 @@ export default function Home() {
       }, 1500)
   };
 
+  // Reset when the song removed
   const handleReset = () => {
     setMoodAnalysis(null)
     setShowResults(false)
@@ -57,7 +60,7 @@ export default function Home() {
       <span className="text-white">— or —</span>
 
       {/* Connect Spotify */}
-      <SpotifyButton onClickConnect={() => {}}/>
+      <SpotifyButton onClickConnect={() => {toast.info("Coming Soon")}}/>
 
       {/* Hides when Analyzing */}
       {!loading && !showResults && file && (

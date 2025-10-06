@@ -1,6 +1,7 @@
 "use client";
 import { Upload, X } from "lucide-react";
 import { useState } from "react";
+import { toast } from "sonner";
 
 interface AudioUploadProps {
     file: File | null;
@@ -19,7 +20,7 @@ const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 
         // Wrong File Type
         if (!file.type.startsWith("audio/")) {
-            alert("Only audio files are allowed! 🎵");
+            toast.warning("Only audio files are allowed! 🎵");
             e.target.value = "";
             return;
         }
@@ -40,7 +41,7 @@ const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
         const file = e.dataTransfer.files[0]
         if (!file.type.startsWith("audio/")) {
-            alert("Only audio files are allowed! 🎵")
+            toast.warning("Only audio files are allowed! 🎵")
             return
         }
         setFile(file)
