@@ -57,7 +57,7 @@ export default function Home() {
       {/* Audio Preview */}
       {file && <AudioPreview file={file}/>}
       
-      <span className="text-white">— or —</span>
+      <span className="text-white select-none">— or —</span>
 
       {/* Connect Spotify */}
       <SpotifyButton onClickConnect={() => {toast.info("Coming Soon")}}/>
@@ -78,6 +78,12 @@ export default function Home() {
       {/* Result Analysis */}
       {file && showResults && moodAnalysis &&(
         <>
+            {/* Divider */}
+            <div className="flex flex-col items-center w-full max-w-md my-8">
+              <div className="w-full h-px bg-white/20 mb-2"></div>
+              <p className="text-white text-sm uppercase tracking-wide opacity-80 select-none">Mood Analysis</p>
+            </div>
+          
           <MoodBars analysis={moodAnalysis} />
           <Recommendation />
         </>
