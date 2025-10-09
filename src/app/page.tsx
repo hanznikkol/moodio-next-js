@@ -1,47 +1,45 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import AudioPreview from "./main_components/AudioPreview";
 import AudioUpload from "./main_components/AudioUpload";
 import MoodBars from "./main_components/MoodBars";
 import Recommendation from "./main_components/Recommendation";
 import AnalyzeButton from "./main_components/Buttons/AnalyzeButton";
 import SpotifyButton from "./main_components/Buttons/SpotifyButton";
+import { moodAnalyzer , type MoodScores } from "@/lib/moodAnalyzer";
 import { toast } from "sonner";
 
 export default function Home() {
   const [file, setFile] = useState<File | null>(null)
   const [loading, setLoading] = useState(false)
   const [showResults, setShowResults] = useState(false);
-  const [moodAnalysis, setMoodAnalysis] = useState<{[key: string]: number} | null>(null);
+  const [moodAnalysis, setMoodAnalysis] = useState<MoodScores | null>(null);
 
-  // Analyze 
-  const handleAnalyze = () => {
-      if (!file) {
-        toast.warning("Please upload a song first 🎵");
-        return; 
-      }
-      setLoading(true)
-      setTimeout(() => {
-          const analysis = {
-            happy: Math.random(),
-            sad: Math.random(),
-            dreamy: Math.random(),
-            energetic: Math.random(),
-            chill: Math.random(),
-          };  
-          console.log("Analyzing file:", file.name);
-          setMoodAnalysis(analysis);
-          setLoading(false);
-          setShowResults(true);
-      }, 1500)
-  };
+  // Auto Analyze after uploading files
+  useEffect(() => {
+    if (!file) return;
+
+    setLoading(true);
+    setMoodAnalysis(null);
+
+
+    moodAnalyzer(file, (scores) => {
+    setMoodAnalysis(scores);
+    setLoading(false);
+    setShowResults(true);
+      }).catch((err) => {
+        console.log(err)
+        toast.error("Failed to analyze the song")
+        setLoading(false);
+      })
+
+  }, [file])
 
   // Reset when the song removed
   const handleReset = () => {
-    setMoodAnalysis(null)
-    setShowResults(false)
-    setLoading(false)
+    setMoodAnalysis(null);
+    setLoading(false);
   }
   
   return (
@@ -61,33 +59,30 @@ export default function Home() {
 
       {/* Connect Spotify */}
       <SpotifyButton onClickConnect={() => {toast.info("Coming Soon")}}/>
-
-      {/* Hides when Analyzing */}
-      {!loading && !showResults && file && (
-        <AnalyzeButton onAnalyze={handleAnalyze}/>
-      )}
       
-      {/* Loading */}
-      {loading && (
+      {/* Mood Analyze Result Section */}
+      {loading ? 
+      // Loading
+      (
         <div className="flex items-center gap-2 text-white">
-          <div className="w-5 h-5 border-4 border-white border-t-transparent rounded-full animate-spin"></div>
-          <span>Analyzing...</span>
+          <div className="w-5 h-5 border-4 border-pink-300 border-t-transparent rounded-full animate-spin"></div>
+          <span>Analyzing... Please Wait!</span>
         </div>
-      )}
-
-      {/* Result Analysis */}
-      {file && showResults && moodAnalysis &&(
+      ): 
+      // Show Result
+      (
+        file && showResults && moodAnalysis && (
         <>
-            {/* Divider */}
-            <div className="flex flex-col items-center w-full max-w-md my-8">
-              <div className="w-full h-px bg-white/20 mb-2"></div>
-              <p className="text-white text-sm uppercase tracking-wide opacity-80 select-none">Mood Analysis</p>
-            </div>
+          <div className="flex flex-col items-center w-full max-w-md my-8">
+            <div className="w-full h-px bg-white/20 mb-2"></div>
+            <p className="text-white text-sm uppercase tracking-wide opacity-80 select-none">Mood Analysis Result</p>
+          </div>
           
           <MoodBars analysis={moodAnalysis} />
           <Recommendation />
         </>
-      )}
+      ))}
+
     </div>
   );
 }

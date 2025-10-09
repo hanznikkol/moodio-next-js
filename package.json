@@ -17,6 +17,7 @@
     "framer-motion": "^12.23.22",
     "lucide": "^0.544.0",
     "lucide-react": "^0.544.0",
+    "meyda": "^5.6.3",
     "next": "15.5.4",
     "next-themes": "^0.4.6",
     "react": "19.1.0",
@@ -28,6 +29,7 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3",
     "@tailwindcss/postcss": "^4",
+    "@types/meyda": "^5.3.0",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",

@@ -1,6 +1,7 @@
 'use client'
-
 import { Tooltip } from "@heroui/tooltip";
+
+type Mood = "happy" | "sad" | "dreamy" | "energetic" | "chill";
 
 interface MoodBarsProps {
   analysis: {[moodId: string]: number | null} | null

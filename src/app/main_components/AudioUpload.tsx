@@ -13,19 +13,34 @@ export default function AudioUpload({ file, setFile, onReset } : AudioUploadProp
 
 const [isDragging, setIsDragging] = useState(false)
 
-// Handles File Changes
+const MAX_FILE_SIZE_MB = 15; // 15MB limit
+const ALLOWED_TYPES = ["audio/mpeg", "audio/wav", "audio/ogg", "audio/mp3"];
+
+// Validation
+const validateFile = (file: File): boolean => {
+    if(!ALLOWED_TYPES.includes(file.type)) {
+      toast.warning("Only MP3, WAV, or OGG files are allowed 🎵");
+      return false;
+    }
+    if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
+      toast.warning(`File size must be under ${MAX_FILE_SIZE_MB} MB 🚫`);
+      return false;
+    }
+    
+    return true
+}
+
+// File Change
 const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-        const file = e.target.files[0];
-
+        const newFile = e.target.files[0];
         // Wrong File Type
-        if (!file.type.startsWith("audio/")) {
-            toast.warning("Only audio files are allowed! 🎵");
+        if (!validateFile(newFile)) {
             e.target.value = "";
             return;
         }
         onReset?.(); 
-        setFile(file);
+        setFile(newFile);
     } else {
         // User cleared the file input
         setFile(null);
@@ -37,17 +52,18 @@ const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault()
     setIsDragging(false);
+    
     // if the file is not "audio/ or any mp3 files" return error
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-        const file = e.dataTransfer.files[0]
-        if (!file.type.startsWith("audio/")) {
-            toast.warning("Only audio files are allowed! 🎵")
-            return
-        }
-        setFile(file)
+        const newFile = e.dataTransfer.files[0]
+        if (!validateFile(newFile)) return
+
+        onReset?.()
+        setFile(newFile)
     }
 }
 
+// Drag Events
 const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault()
     if(!e.currentTarget.contains(e.relatedTarget as Node)) setIsDragging(false)
