@@ -12,6 +12,7 @@
     "@heroui/alert": "^2.2.27",
     "@heroui/react": "^2.8.4",
     "@heroui/tooltip": "^2.2.23",
+    "axios": "^1.12.2",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "framer-motion": "^12.23.22",
