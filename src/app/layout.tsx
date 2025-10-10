@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import EdgeGlow from "./main_components/Pulse/EdgeGlow";
+import EdgeGlow from "./main_components/BackgroundPulse/EdgeGlow";
 import { Toaster } from "sonner";
 import { FaGithub } from "react-icons/fa";
 import { History } from "lucide-react";
