@@ -1,15 +1,14 @@
 'use client'
 import { useEffect, useState } from "react";
-import MoodBars from "./main_components/Results/sub_component/MoodBars";
-import Recommendation from "./main_components/Results/sub_component/Recommendation";
 import SpotifyButton from "./main_components/Buttons/SpotifyButton";
 import { toast } from "sonner";
 import type { MoodScores } from "@/lib/moodTypes";
-import { Loader2, Music } from "lucide-react";
 import axios from "axios";
 import LoadingSpinner from "./main_components/LoadingSpinner";
-import Header from "./main_components/Header";
+import LogoHeader from "./main_components/LogoHeader";
 import MoodResult from "./main_components/Results/MoodResult";
+import PlayPrompt from "./main_components/PlayPrompt";
+import { SpotifyTrack } from "@/lib/spotifyTypes";
 
 export default function Home() {
   const [selectedTrackID, setSelectedTrackID] = useState<string | null>(null);
@@ -27,6 +26,30 @@ export default function Home() {
       window.location.href = "/api/spotify/login";
     }
   }
+  
+  const getCurrentTrack = async (accessToken: string) => {
+    try {
+      const res = await axios.get("https://api.spotify.com/v1/me/player/currently-playing", {
+        headers: {
+          Authorization: `Bearer ${accessToken}`
+        }
+      })
+
+      if (res.status === 204) return null; // nothing playing
+
+      const data = res.data as {item: SpotifyTrack}
+      return {
+          id: data.item.id,
+          name: data.item.name,
+          artists: data.item.artists.map((a) => a.name).join(", "),
+          spotifyUrl: data.item.external_urls.spotify,
+      }
+    } catch (err) {
+        console.error("Error fetching current track:", err);
+        toast.error("Error fetching current track!")
+        return null;  
+    }
+  }
 
   // Spotify Mood Analyzer
   const spotifyTrackAnalyzer = async (trackID: string) => {
@@ -36,6 +59,7 @@ export default function Home() {
     setShowPrompt(false)
   };
 
+  // Handle Spotify login redirect and save token
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
     const token = params.get("access_token")
@@ -57,33 +81,41 @@ export default function Home() {
 
       window.history.replaceState({}, document.title, "/")
     }
+
   }, [])
 
-  const openSpotify = () => window.open("https://open.spotify.com", "_blank")
+  useEffect(()=>{
+    if (!spotifyToken) return
+
+    const fetchTrack = async () => {
+      const track = await getCurrentTrack(spotifyToken)
+      if (track) {
+        toast.info(`Current track: ${track.name} by ${track.artists}`);
+        console.log("Current track:", track);
+        setSelectedTrackID(track.id);
+      }
+      else {
+        toast.warning("No track is currently playing!");
+      }
+    }
+
+    fetchTrack()
+  }, [spotifyToken])
+
 
   return (
     <div className="flex flex-col items-center p-8 w-full gap-8">
       {/* Header */}
-      <Header selectedTrackID={selectedTrackID}/>
+      <LogoHeader selectedTrackID={selectedTrackID} spotifyToken={spotifyToken}/>
 
       {/* Spotify Button */}
       {!selectedTrackID && !spotifyToken && !connecting && <SpotifyButton onClick={handleSpotifyClick} />}
 
       {/* Connecting state */}
-      {loading && !selectedTrackID && !spotifyToken && <LoadingSpinner message="Connecting to Spotify"/>}
+      {connecting && !selectedTrackID && !spotifyToken && <LoadingSpinner message="Connecting to Spotify"/>}
 
       {/* Play song from spotify */}
-      {showPrompt && !selectedTrackID && (
-        <div className="flex flex-col items-center justify-center gap-4 mt-8 text-white text-center p-4 rounded-lg">
-          <p className="text-lg mb-2 font-bold bg-clip-text text-transparent bg-gradient-to-r from-pink-400 to-purple-500">
-            Please play something on Spotify to track mood
-          </p>
-          <SpotifyButton
-            onClick={openSpotify}
-            label="Open Spotify & Play Music"
-          />    
-        </div>
-      )}
+      {showPrompt && !selectedTrackID && <PlayPrompt/>}
 
       {/* Analyzing State */}
       {loading && <LoadingSpinner message="Analyzing... Please wait!" />}
