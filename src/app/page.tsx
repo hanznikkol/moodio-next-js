@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import SpotifyButton from "./main_components/Buttons/SpotifyButton";
 import { toast } from "sonner";
 import type { MoodScores } from "@/lib/moodTypes";
@@ -8,7 +8,7 @@ import LoadingSpinner from "./main_components/LoadingSpinner";
 import LogoHeader from "./main_components/LogoHeader";
 import MoodResult from "./main_components/Results/MoodResult";
 import PlayPrompt from "./main_components/PlayPrompt";
-import { SpotifyTrack } from "@/lib/spotifyTypes";
+import { SpotifyPlayback } from "@/lib/spotifyTypes";
 
 export default function Home() {
   const [selectedTrackID, setSelectedTrackID] = useState<string | null>(null);
@@ -18,6 +18,8 @@ export default function Home() {
   const [showResults, setShowResults] = useState(false);
   const [moodAnalysis, setMoodAnalysis] = useState<MoodScores | null>(null);
   const [showPrompt, setShowPrompt] = useState(false);
+  const previousTrackId = useRef<string | null>(null);
+  const previousIsPlaying = useRef<boolean>(false);
 
   // Logging in Spotify
   const handleSpotifyClick = () => {
@@ -27,6 +29,7 @@ export default function Home() {
     }
   }
   
+  //Get Current Track
   const getCurrentTrack = async (accessToken: string) => {
     try {
       const res = await axios.get("https://api.spotify.com/v1/me/player/currently-playing", {
@@ -37,12 +40,13 @@ export default function Home() {
 
       if (res.status === 204) return null; // nothing playing
 
-      const data = res.data as {item: SpotifyTrack}
+      const data = res.data as SpotifyPlayback
       return {
           id: data.item.id,
           name: data.item.name,
           artists: data.item.artists.map((a) => a.name).join(", "),
           spotifyUrl: data.item.external_urls.spotify,
+          is_playing: data.is_playing
       }
     } catch (err) {
         console.error("Error fetching current track:", err);
@@ -84,22 +88,35 @@ export default function Home() {
 
   }, [])
 
+
+  // Fetch Track from Spotify
   useEffect(()=>{
     if (!spotifyToken) return
 
-    const fetchTrack = async () => {
-      const track = await getCurrentTrack(spotifyToken)
-      if (track) {
-        toast.info(`Current track: ${track.name} by ${track.artists}`);
-        console.log("Current track:", track);
-        setSelectedTrackID(track.id);
+    const checkPlayback = async () => {
+      const res = await getCurrentTrack(spotifyToken);
+      if (!res) return;
+
+      // Track change
+      if (res.id !== previousTrackId.current) {
+        previousTrackId.current = res.id;
+        toast.info(`🎵 Now playing: ${res.name} by ${res.artists}`);
+        console.log("🎶 New track:", res.name);
+        setSelectedTrackID(res.id);
       }
-      else {
-        toast.warning("No track is currently playing!");
+
+      // Play/Pause change
+      if (res.is_playing !== previousIsPlaying.current) {
+        previousIsPlaying.current = res.is_playing;
+        if (res.is_playing) toast.success("▶️ Playback resumed");
+        else toast.warning("⏸️ Playback paused");
       }
     }
 
-    fetchTrack()
+    checkPlayback()
+    const interval = setInterval(checkPlayback, 3000);
+    return () => clearInterval(interval)
+
   }, [spotifyToken])
 
 

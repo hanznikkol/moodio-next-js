@@ -9,3 +9,8 @@ export interface SpotifyTrack {
     external_urls: { spotify: string };
     preview_url?: string;
 }
+
+export interface SpotifyPlayback {
+    is_playing: boolean
+    item: SpotifyTrack;
+}
