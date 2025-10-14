@@ -3,6 +3,24 @@ import { SpotifyArtist } from "./spotifyTypes";
 import { toast } from "sonner";
 import { MoodScores } from "./moodTypes";
 
+// GET USER PROFILE 
+export const getUserProfile = async (accessToken: string) => {
+  try {
+    const res = await axios.get("https://api.spotify.com/v1/me", {
+      headers: { Authorization: `Bearer ${accessToken}` }
+    }); 
+
+    if (res.status !== 200 || !res.data) return null;
+
+    return res.data; // return full user profile data
+
+  } catch (err) {
+    console.error("Error fetching user profile:", err);
+    toast.error("Error fetching user profile!");
+    return null;
+  } 
+}
+
 // GET CURRENT TRACK
 export const getCurrentTrack = async (accessToken: string) => {
   try {

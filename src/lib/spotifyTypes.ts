@@ -14,3 +14,9 @@ export interface SpotifyPlayback {
     is_playing: boolean
     item: SpotifyTrack;
 }
+
+export interface SpotifyUserProfile {
+    display_name: string;
+    id: string;
+    images: { url: string }[];
+}

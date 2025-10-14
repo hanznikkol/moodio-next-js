@@ -12,6 +12,8 @@
     "@heroui/alert": "^2.2.27",
     "@heroui/react": "^2.8.4",
     "@heroui/tooltip": "^2.2.23",
+    "@radix-ui/react-avatar": "^1.1.10",
+    "@radix-ui/react-dropdown-menu": "^2.1.16",
     "axios": "^1.12.2",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
