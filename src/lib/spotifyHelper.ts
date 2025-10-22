@@ -27,7 +27,6 @@ export const getCurrentTrack = async (accessToken: string) => {
       headers: { Authorization: `Bearer ${accessToken}` }
     });
 
-    
     if (res.status === 204 || !res.data?.item) return null; // nothing playing
 
     const data = res.data;

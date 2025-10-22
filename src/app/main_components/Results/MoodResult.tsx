@@ -1,6 +1,9 @@
 "use client"
 import React from "react";
 import { AnalysisResult } from "@/lib/analysisResult";
+import SpotifyButton from "../Buttons/SpotifyButton";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
 
 interface MoodResultProps {
   analysis: AnalysisResult;
@@ -8,37 +11,47 @@ interface MoodResultProps {
 
 export default function MoodResult({ analysis }: MoodResultProps) {
   return (
-    <div className="flex flex-col items-center justify-center w-full max-w-md my-4 text-white">
-      {/* Header */}
-      <div className="w-full h-px bg-white/20 mb-2"></div>
-      <p className="text-sm uppercase tracking-wide opacity-80 select-none">
-        Mood Analysis Result
-      </p>
+    <Card className="w-full max-w-md text-white bg-white/10 backdrop-blur-xl border border-white/20 shadow-lg rounded-2xl ">
+      <CardHeader>
+          <CardTitle className="text-4xl font-extrabold text-center text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.5)]">
+            {analysis.mood}
+          </CardTitle>
+      </CardHeader>
 
+      <Separator className=" bg-white/20"/>
+
+      <CardContent className="flex flex-col gap-6 justify-center">
       {/* Mood */}
-      <h2 className="text-2xl font-bold mt-4">{analysis.mood}</h2>
-      <p className="text-sm mt-2 text-center">{analysis.explanation}</p>
+      <p className="text-sm text-center">{analysis.explanation}</p>
 
       {/* Color Palette */}
-      {
-        analysis?.colorPalette?.length > 0 && (
-          <div className="flex gap-2 mt-4 justify-evenly">
-          {analysis.colorPalette.map((color) => (
-            <div
-              key={color}
-              style={{ backgroundColor: color }}
-              className="w-8 h-8 rounded"
-            />
-          ))}
+      {analysis?.colorPalette?.length > 0 && (
+          <div className="flex gap-2 justify-center">
+            {analysis.colorPalette.map((color) => (
+              <div
+                key={color}
+                style={{ backgroundColor: color }}
+                className="w-8 h-8 rounded-md shadow-sm border border-white/20"
+              />
+            ))}
           </div>
         )
       }
-      
+
+      <div className="flex flex-col w-full max-w-md">
+        <label className="text-xs font-semibold text-white/70 mb-1 uppercase tracking-wide">
+          Lyrics
+        </label>
+        <div className="font-serif p-4 max-h-48 overflow-y-auto bg-white/5 rounded-md whitespace-pre-wrap text-sm text-white/90">
+          {analysis.lyrics || "No lyrics available"}
+        </div>
+      </div>
+
 
       {/* Recommended Tracks */}
       {analysis.recommendedTracks.length > 0 && (
-        <div className="mt-6 w-full">
-          <h3 className="text-lg font-semibold mb-2">Recommended Tracks</h3>
+        <div className=" w-full">
+          <h3 className="text-lg font-semibold mb-2 text-center">Recommended Tracks</h3>
           <ul className="flex flex-col gap-2">
             {analysis.recommendedTracks.map((track) => (
               <li key={track.id || track.name} className="text-sm">
@@ -48,18 +61,8 @@ export default function MoodResult({ analysis }: MoodResultProps) {
           </ul>
         </div>
       )}
+      </CardContent>
 
-      {/* Optional: Spotify link */}
-      {analysis.spotifyTrackId && (
-        <a
-          href={`https://open.spotify.com/track/${analysis.spotifyTrackId}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="mt-4 text-blue-400 underline"
-        >
-          Open in Spotify
-        </a>
-      )}
-    </div>
+    </Card>
   );
 }

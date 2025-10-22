@@ -7,7 +7,7 @@ export async function POST(req: Request) {
      try {
           const { artist, songTitle } = await req.json();
           const prompt = `
-               You are a music analysis expert. Analyze the following song and return a JSON strictly following this schema:
+               You are a music analysis expert with 100% percent accuracy. Analyze the following song and return a JSON strictly following this schema:
                {
                     "mood": string,
                     "explanation": string,
@@ -20,11 +20,20 @@ export async function POST(req: Request) {
                }
                Song Title: "${songTitle}"
                Artist: "${artist}"
+
                Instructions:
-               - Respond **only** with a valid JSON object.
-               - Include **one or two moods combined into a single descriptive string** (e.g., "Calm and reflective").
-               - Always include a **colorPalette** field with **hex color codes** that match the mood.
-               - Do **not** include explanations or extra text outside the JSON.
+               - Respond **only with valid JSON**, no extra text.
+               - Return a **single-line JSON string**.
+               - Escape quotes inside strings as (\").
+               - Replace all line breaks in strings (especially lyrics) with \n.
+               - Mood: 1-2 descriptive words combined (e.g., "Calm and reflective").
+               - Explanation: 2-3 sentences describing genre, melody, lyrics, and overall vibe.
+               - Lyrics: provide full exact lyrics if available; otherwise, return null. Do not invent lyrics.
+               - ColorPalette: 3-5 hex colors **directly extracted from the album art or single cover**. 
+               If exact album art colors are unavailable, pick colors that strongly reflect the album's cover image, not just the mood.
+               - RecommendedTracks: match mood/style; all fields must be single-line strings.
+               - Consider lyrics, tempo, melody, artist style, and genre.
+               - Use multiple sources if needed.
           `;
 
           const response = await ai.models.generateContent({
@@ -42,11 +51,11 @@ export async function POST(req: Request) {
 
           // remove markdown code fences if present
           const jsonMessage = rawText
-               .replace(/^```json\s*/i, '')   // remove starting ```json (case insensitive)
-               .replace(/^```\s*/i, '')       // or just ```
-               .replace(/```$/i, '')          // remove ending ```
+               .replace(/^```json\s*/i, '') 
+               .replace(/^```\s*/i, '')       
+               .replace(/```$/i, '')
                .trim();
-
+                        
           if (!jsonMessage) throw new Error("No response from AI");
 
           console.log("AI Response:", jsonMessage);

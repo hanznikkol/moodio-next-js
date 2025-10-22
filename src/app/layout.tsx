@@ -31,22 +31,20 @@ export default function RootLayout({
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`} >
         <SpotifyProvider>
-          <Toaster richColors position="bottom-right" className="z-[50]"/>
-          <div className="relative flex flex-col items-center justify-center min-h-screen overflow-y-auto bg-black select-none">
-            <EdgeGlow/>
 
+          <Toaster richColors position="bottom-right" className="z-[50]"/>
+          <div className="relative flex flex-col items-center justify-center min-h-screen overflow-y-auto overflow-x-hidden bg-black select-none">
+            <EdgeGlow/>
             {/* Header Navigation */}
             <Header/>
-
             {/* Main Content */}
-            <div className="relative z-10 w-full h-full flex flex-col items-center justify-center mt-20">
+            <div className="relative z-10 w-full h-full flex flex-col items-center justify-center my-16">
               {children}
             </div>
-            
             {/* Footer */}
             <Footer/>
-
           </div>
+          
         </SpotifyProvider>
       </body>
     </html>

@@ -128,7 +128,7 @@ export default function Home() {
 
 
   return (
-    <div className="flex flex-col items-center p-8 w-full gap-8">
+    <div className="flex flex-col items-center p-8 w-full gap-6">
       {/* Header */}
       <LogoHeader
         selectedTrackID={selectedTrackID}
@@ -149,6 +149,13 @@ export default function Home() {
 
       {/* Mood Analysis Results */}
       {!loading && selectedTrackID && showResults && moodAnalysis && <MoodResult analysis={moodAnalysis} />}
+
+      {/* Analyze another song */}
+      {!loading && selectedTrackID && showResults && moodAnalysis && (       
+        <div>
+          <SpotifyButton label="Analyze another song" onClick={() => {}}/>
+        </div>
+      )}
 
     </div>
   );

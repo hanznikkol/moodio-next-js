@@ -20,7 +20,6 @@ export default function LogoHeader({
       {/* Logo and Powered */}
       <div className="flex flex-col items-center gap-2">
         <h1 className="text-6xl font-bold text-white">Moodio</h1>
-
         {/* Powered By */}
         <div className="flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 text-white shadow-md">
           <Sparkles className="w-4 h-4 text-yellow-300 animate-pulse" />
@@ -46,6 +45,7 @@ export default function LogoHeader({
                   <div className="flex gap-2 items-center">
                     <Music className="w-5 h-5 text-green-400" />
                     <span className="font-semibold text-2xl">{trackName}</span>
+                    <Music className="w-5 h-5 text-green-400" />
                   </div>
     
                   {trackArtist && <span className="opacity-80 text-white">by {trackArtist}</span>}
