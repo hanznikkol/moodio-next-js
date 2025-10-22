@@ -21,6 +21,7 @@
     "clsx": "^2.1.1",
     "framer-motion": "^12.23.22",
     "install": "^0.13.0",
+    "json5": "^2.2.3",
     "lucide": "^0.544.0",
     "lucide-react": "^0.544.0",
     "meyda": "^5.6.3",

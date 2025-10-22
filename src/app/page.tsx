@@ -15,13 +15,10 @@ export default function Home() {
   // Spotify context
   const {
     spotifyToken,
-    refreshToken,
     connecting,
     showPrompt,
     setConnecting,
     setShowPrompt,
-    setSpotifyToken,
-    setRefreshToken,
     resetAll,
   } = useSpotify();
 
@@ -32,18 +29,23 @@ export default function Home() {
   const [moodAnalysis, setMoodAnalysis] = useState<AnalysisResult | null>(null);
   const [currentTrack, setCurrentTrack] = useState<{ name: string; artists: string } | null>(null);
 
-  // Refs for non-reactive values
   const analyzedTracks = useRef<Set<string>>(new Set());
   const pollingRef = useRef<NodeJS.Timeout | null>(null);
   const isAnalyzingRef = useRef(false);
 
-  // Logging in Spotify
   const handleSpotifyClick = () => {
     if (!spotifyToken) {
       setConnecting(true)
       window.location.href = "/api/spotify/login";
     }
   }
+
+  const handleAnalyzeAnotherSong = () => {
+    resetPlayback()
+    checkPlayback()
+    pollingRef.current = setInterval(checkPlayback, 25000)
+  }
+
   // Clear state when needed 
   const resetPlayback = useCallback(() => {
     analyzedTracks.current.clear();
@@ -52,69 +54,74 @@ export default function Home() {
     setSelectedTrackID(null);
     setShowResults(false);
     setMoodAnalysis(null);
-  }, []);
+    setShowPrompt(true);
+  }, [setShowPrompt]);
 
   // Check current Spotify Playback
   const checkPlayback = useCallback(async () => {
-    if (!spotifyToken || isAnalyzingRef.current) return;
+    if (!spotifyToken || isAnalyzingRef.current || showResults) return;
 
     const track = await getCurrentTrack(spotifyToken);
-    if (!track) {
+    if (!track || !track.is_playing) {
       setSelectedTrackID(null);
+      setCurrentTrack(null);
+      setShowResults(false);
+      setMoodAnalysis(null);
       setShowPrompt(true);
       return;
-    }
+  }
 
     const { id, is_playing } = track;
+    if (!is_playing || analyzedTracks.current.has(id) || id === selectedTrackID) return;
 
-    // Skip if same track or already analyzed
-    if (analyzedTracks.current.has(id) || id === selectedTrackID) return;
+    setSelectedTrackID(id);
+    setCurrentTrack({ name: track.name, artists: track.artists });
+    setShowPrompt(false);
+    toast.info(`🎵 Now playing: ${track.name} by ${track.artists}`);
 
-    if (is_playing) {
-      setSelectedTrackID(id);
-      setCurrentTrack({name: track.name, artists: track.artists})
-      setShowPrompt(false);
-      toast.info(`🎵 Now playing: ${track.name} by ${track.artists}`);
+    isAnalyzingRef.current = true;
+    setLoading(true);
 
-      // Prevent double-analysis
-      isAnalyzingRef.current = true;
-      setLoading(true);
+    try {
+      const artistName = track.artists.split(",")[0];
 
-      // Fetch Result
-      try {
-        const result = await analyzeMood(track.artists.split(",")[0], track.name);
-        setMoodAnalysis(result);
-        setShowResults(true);
-        analyzedTracks.current.add(id);
-      } catch (err) {
-        console.error("Analysis error:", err);
-        toast.error("Error analyzing the song mood!");
+      // ✅ Cached version avoids API spam
+      const result = await analyzeMood(artistName, track.name);
+
+      if (!result) {
+        toast.error("AI did not return analysis!");
         resetPlayback();
-      } finally {
-        isAnalyzingRef.current = false;
-        setLoading(false);
+        return;
       }
-      
+
+      setMoodAnalysis(result);
+      setShowResults(true);
+      analyzedTracks.current.add(id);
+
+    } catch (err) {
+      console.error("Analysis error:", err);
+      toast.error("Error analyzing the song mood!");
+    } finally {
+      isAnalyzingRef.current = false;
+      setLoading(false);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [spotifyToken, selectedTrackID, resetPlayback])
+  }, [spotifyToken, showResults, selectedTrackID, setShowPrompt, resetPlayback]);
+
 
   useEffect(() => {
-    if (!spotifyToken) return
+    if (!spotifyToken || showResults) return
 
     checkPlayback()
-
-    //Poll every 10s
-    pollingRef.current = setInterval(checkPlayback, 15000);
+    pollingRef.current = setInterval(checkPlayback, 25000);
     
-    // Pause when tab hidden (auto performance)
+    // Tab hidden
     const handleVisibilityChange = () => {
       if (document.hidden && pollingRef.current) {
         clearInterval(pollingRef.current);
         pollingRef.current = null;
       } else if (!document.hidden && !pollingRef.current) {
         checkPlayback();
-        pollingRef.current = setInterval(checkPlayback, 10000);
+        pollingRef.current = setInterval(checkPlayback, 25000);
       }
     };
     document.addEventListener("visibilitychange", handleVisibilityChange);
@@ -125,6 +132,12 @@ export default function Home() {
     };
 
   }, [spotifyToken, checkPlayback])
+
+  useEffect(() => {
+    if (spotifyToken && !showPrompt && !loading && !showResults) {
+      setShowPrompt(true);
+    }
+  }, [spotifyToken, showPrompt, loading, showResults, setShowPrompt]);
 
 
   return (
@@ -145,7 +158,7 @@ export default function Home() {
       {connecting && !selectedTrackID && !spotifyToken && <LoadingSpinner message="Connecting to Spotify"/>}
 
       {/* Play song from spotify */}
-      {showPrompt && (!selectedTrackID || !spotifyToken) && <PlayPrompt />}
+      {showPrompt && <PlayPrompt />}
 
       {/* Mood Analysis Results */}
       {!loading && selectedTrackID && showResults && moodAnalysis && <MoodResult analysis={moodAnalysis} />}
@@ -153,7 +166,7 @@ export default function Home() {
       {/* Analyze another song */}
       {!loading && selectedTrackID && showResults && moodAnalysis && (       
         <div>
-          <SpotifyButton label="Analyze another song" onClick={() => {}}/>
+          <SpotifyButton label="Analyze another song" onClick={handleAnalyzeAnotherSong}/>
         </div>
       )}
 

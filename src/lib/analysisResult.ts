@@ -12,7 +12,7 @@ export type AnalysisResult = {
   explanation: string;
   colorPalette: string[];
   spotifyTrackId?: string;
-  lyrics?: string;
+  lyrics?: string | null;
   recommendedTracks: RecommendedTrack[];
 }
     

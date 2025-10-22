@@ -62,7 +62,6 @@ export async function refreshAccessToken(
         refreshToken: refreshToken
     });
 
-
     if (!data.access_token) throw new Error("No access token returned");
 
     localStorage.setItem("spotifyToken", data.access_token);
