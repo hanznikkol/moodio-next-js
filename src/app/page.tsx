@@ -2,13 +2,13 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import SpotifyButton from "./main_components/Buttons/SpotifyButton";
 import { toast } from "sonner";
-import type { AnalysisResult } from "@/lib/analysisResult";
+import type { AnalysisResult } from "@/lib/analysisMoodLib/analysisResult";
 import LoadingSpinner from "./main_components/LoadingSpinner";
 import LogoHeader from "./main_components/LogoHeader";
 import PlayPrompt from "./main_components/PlayPrompt";
-import { getCurrentTrack } from "@/lib/spotifyHelper";
-import { useSpotify } from "@/lib/context/spotifyContext";
-import { analyzeMood } from "@/lib/analysisMoodHelper";
+import { getCurrentTrack } from "@/lib/spotifyLib/spotifyHelper";
+import { useSpotify } from "@/lib/spotifyLib/context/spotifyContext";
+import { analyzeMood } from "@/lib/analysisMoodLib/analysisMoodHelper";
 import MoodResult from "./main_components/Results/MoodResult";
 
 export default function Home() {

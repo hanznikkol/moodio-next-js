@@ -5,7 +5,7 @@ import EdgeGlow from "./main_components/BackgroundPulse/EdgeGlow";
 import { Toaster } from "sonner";
 import Header from "./main_components/Header&Footer/Header";
 import Footer from "./main_components/Header&Footer/Footer";
-import { SpotifyProvider } from "@/lib/context/spotifyContext";
+import { SpotifyProvider } from "@/lib/spotifyLib/context/spotifyContext";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",

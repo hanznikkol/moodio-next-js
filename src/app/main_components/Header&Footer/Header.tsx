@@ -1,7 +1,7 @@
 "use client";
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { useSpotify } from '@/lib/context/spotifyContext';
+import { useSpotify } from '@/lib/spotifyLib/context/spotifyContext';
 import { History } from 'lucide-react'
 import { FaGithub } from 'react-icons/fa'
 export default function Header() {

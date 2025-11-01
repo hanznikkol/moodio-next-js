@@ -1,15 +1,15 @@
 import { NextResponse } from "next/server";
-import { analyzeMoodServer } from "@/lib/analysisMoodHelperServer";
+import { analyzeMoodServer } from "@/lib/analysisMoodLib/analysisMoodHelperServer";
 
 export async function POST(req: Request) {
   try {
-    const { artist, songTitle } = await req.json();
+    const {artist, songTitle, spotifyToken} = await req.json();
 
     if (!artist || !songTitle) {
       return NextResponse.json({ error: "Artist and song title are required" }, { status: 400 });
     }
 
-    const analysis = await analyzeMoodServer(artist, songTitle);
+    const analysis = await analyzeMoodServer(artist, songTitle, spotifyToken);
 
     if (!analysis) {
       return NextResponse.json({ error: "Analysis unavailable. AI might be busy." }, { status: 503 });

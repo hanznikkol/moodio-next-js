@@ -4,7 +4,7 @@ export type RecommendedTrack = {
   artist: string;
   note?: string;
   image?: string;
-  uri?: string;
+  uri?: string | null;
 };
 
 export type AnalysisResult = {
