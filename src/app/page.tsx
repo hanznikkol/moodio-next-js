@@ -52,6 +52,7 @@ export default function Home() {
     if (pollingRef.current) clearInterval(pollingRef.current);
     isAnalyzingRef.current = false;
     setSelectedTrackID(null);
+    setCurrentTrack(null);
     setShowResults(false);
     setMoodAnalysis(null);
     setShowPrompt(true);
@@ -85,7 +86,7 @@ export default function Home() {
     try {
       const artistName = track.artists.split(",")[0];
 
-      // ✅ Cached version avoids API spam
+      //  Cached version avoids API spam
       const result = await analyzeMood(artistName, track.name);
 
       if (!result) {
@@ -100,7 +101,9 @@ export default function Home() {
 
     } catch (err) {
       console.error("Analysis error:", err);
-      toast.error("Error analyzing the song mood!");
+      toast.error("Error analyzing the song mood! Please ");
+      resetPlayback()
+
     } finally {
       isAnalyzingRef.current = false;
       setLoading(false);
@@ -152,7 +155,14 @@ export default function Home() {
       />
 
       {/* Spotify Button */}
-      {!selectedTrackID && !spotifyToken && !connecting && <SpotifyButton onClick={handleSpotifyClick} />}
+      
+      {!selectedTrackID && !spotifyToken && !connecting && (
+        <>
+          <div className="mt-4">
+            <SpotifyButton onClick={handleSpotifyClick} />
+          </div>
+        </>
+      )}
 
       {/* Connecting state */}
       {connecting && !selectedTrackID && !spotifyToken && <LoadingSpinner message="Connecting to Spotify"/>}

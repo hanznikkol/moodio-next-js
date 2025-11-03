@@ -13,11 +13,11 @@ export default function Footer() {
                 className="flex items-center gap-1 text-white text-sm font-bold hover:text-pink-400 transition-colors select-none duration-200"
             >
                 <span className="flex items-center gap-0.5 animate-bounce">
-                <span className="inline-block text-green-400">💻</span>
+                  <span className="inline-block text-green-400">💻</span>
                 </span>
-                Hanz Nikkol Maas
+                  Hanz Nikkol Maas
                 <span className="flex items-center gap-0.5 animate-bounce">
-                <span className="inline-block text-green-400">💻</span>
+                  <span className="inline-block text-green-400">💻</span>
                 </span>
             </a>
             <span>| &copy; {new Date().getFullYear()}</span>

@@ -6,6 +6,7 @@ import { Separator } from "@/components/ui/separator";
 import Image from "next/image";
 import { Music } from "lucide-react";
 import { FaSpotify } from "react-icons/fa";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface MoodResultProps {
   analysis: AnalysisResult;
@@ -30,10 +31,11 @@ export default function MoodResult({ analysis }: MoodResultProps) {
     <Card className="w-full max-w-md text-white bg-white/10 backdrop-blur-xl border border-white/20 shadow-lg rounded-2xl ">
       <CardHeader>
           <CardTitle 
-            style={{
-              textShadow: palettes.length ? palettes.slice(0, 3).map((c) => `0 0 20px ${c}`).join(", ")
-              : "0 0 15px rgba(255,255,255,0.5)",
-            }}
+              style={{
+                textShadow: palettes.length
+                  ? `0 0 8px ${palettes[0]}, 0 0 16px ${palettes[0]}55`
+                  : "0 0 8px rgba(255,255,255,0.3)",
+              }}
             className="text-4xl font-extrabold text-center text-white">
             {analysis.mood || "Unknown"}
           </CardTitle>
@@ -44,21 +46,28 @@ export default function MoodResult({ analysis }: MoodResultProps) {
       <CardContent className="flex flex-col gap-6 justify-center">
         {/* Mood */}
         <p className="text-sm text-center">{analysis.explanation || "No explanation available"}</p>
-
+        
         {/* Color Palette */}
         {analysis?.colorPalette?.length > 0 && (
+          <TooltipProvider>
             <div className="flex gap-2 justify-center">
               {analysis.colorPalette.map((color) => (
-                <div
-                  key={color}
-                  style={{ backgroundColor: color }}
-                  className="w-8 h-8 rounded-md shadow-sm border border-white/20"
-                />
+                <Tooltip key={color}>
+                  <TooltipTrigger asChild>
+                    <div
+                      style={{ backgroundColor: color }}
+                      className="w-8 h-8 rounded-md shadow-sm border border-white/20 cursor-pointer"
+                    />
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>{color}</p>
+                  </TooltipContent>
+                </Tooltip>
               ))}
             </div>
-          )
-        }
-      
+          </TooltipProvider>
+        )}
+        {/* Lyrics soon feature */}
         {/* 
           <div className="flex flex-col w-full max-w-md">
             <label className="text-xs font-semibold text-white/70 mb-1 uppercase tracking-wide">
