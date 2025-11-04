@@ -6,10 +6,11 @@ import type { AnalysisResult } from "@/lib/analysisMoodLib/analysisResult";
 import LoadingSpinner from "./main_components/LoadingSpinner";
 import LogoHeader from "./main_components/LogoHeader";
 import PlayPrompt from "./main_components/PlayPrompt";
-import { getCurrentTrack } from "@/lib/spotifyLib/spotifyHelper";
+import { getCurrentTrack, getUserProfile } from "@/lib/spotifyLib/spotifyHelper";
 import { useSpotify } from "@/lib/spotifyLib/context/spotifyContext";
 import { analyzeMood } from "@/lib/analysisMoodLib/analysisMoodHelper";
 import MoodResult from "./main_components/Results/MoodResult";
+import axios from "axios";
 
 export default function Home() {
   // Spotify context
@@ -70,27 +71,32 @@ export default function Home() {
       setMoodAnalysis(null);
       setShowPrompt(true);
       return;
-  }
+    }
 
     const { id, is_playing } = track;
     if (!is_playing || analyzedTracks.current.has(id) || id === selectedTrackID) return;
 
+    const trackData = {
+      name: track.name,
+      artists: track.artists.map(a => a.name).join(", ")
+    };
+
     setSelectedTrackID(id);
-    setCurrentTrack({ name: track.name, artists: track.artists });
+    setCurrentTrack(trackData);
     setShowPrompt(false);
-    toast.info(`🎵 Now playing: ${track.name} by ${track.artists}`);
+    toast.info(`🎵 Now playing: ${track.name} by ${track.artists.map(a => a.name).join(", ")}`);
 
     isAnalyzingRef.current = true;
     setLoading(true);
 
     try {
-      const artistName = track.artists.split(",")[0];
+      const artistName = track.artists[0]?.name ?? "Unknown Artist";
 
-      //  Cached version avoids API spam
+      //ANALYZE MOOD
       const result = await analyzeMood(artistName, track.name);
 
       if (!result) {
-        toast.error("AI did not return analysis!");
+        toast.error("Provider did not return analysis!");
         resetPlayback();
         return;
       }
@@ -98,6 +104,27 @@ export default function Home() {
       setMoodAnalysis(result);
       setShowResults(true);
       analyzedTracks.current.add(id);
+
+      //Save to database server
+      const profile = await getUserProfile(spotifyToken)
+      if (profile && trackData) {
+        try {
+          const response = await axios.post("/api/save_analysis", {
+            userProfile: profile,
+            track: {
+              id: track.id,
+              name: track.name,
+              artists: track.artists.map((a) => a.name).join(", "),
+              preview_url: track.preview_url,
+              spotify_url: track.external_urls.spotify,
+            },
+            analysisResult: result,
+          })
+        } catch (err : any) {
+          console.error("Error saving analysis:", err.response?.data || err.message);
+          toast.error("Failed to save analysis to database!");
+        }
+      }
 
     } catch (err) {
       console.error("Analysis error:", err);
@@ -110,7 +137,8 @@ export default function Home() {
     }
   }, [spotifyToken, showResults, selectedTrackID, setShowPrompt, resetPlayback]);
 
-
+  
+  //Poll track
   useEffect(() => {
     if (!spotifyToken || showResults) return
 
@@ -136,6 +164,7 @@ export default function Home() {
 
   }, [spotifyToken, checkPlayback])
 
+  //showPrompt if no track
   useEffect(() => {
     if (spotifyToken && !showPrompt && !loading && !showResults) {
       setShowPrompt(true);
@@ -155,7 +184,6 @@ export default function Home() {
       />
 
       {/* Spotify Button */}
-      
       {!selectedTrackID && !spotifyToken && !connecting && (
         <>
           <div className="mt-4">

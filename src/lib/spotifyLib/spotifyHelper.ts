@@ -1,5 +1,5 @@
 import axios from "axios";
-import { SpotifyArtist } from "./spotifyTypes";
+import { SpotifyTrack } from "./spotifyTypes";
 import { toast } from "sonner";
 
 // GET USER PROFILE 
@@ -21,7 +21,7 @@ export const getUserProfile = async (accessToken: string) => {
 }
 
 // GET CURRENT TRACK
-export const getCurrentTrack = async (accessToken: string) => {
+export const getCurrentTrack = async (accessToken: string): Promise<SpotifyTrack & { is_playing: boolean } | null> => {
   try {
     const res = await axios.get("https://api.spotify.com/v1/me/player/currently-playing", {
       headers: { Authorization: `Bearer ${accessToken}` }
@@ -31,13 +31,15 @@ export const getCurrentTrack = async (accessToken: string) => {
 
     const data = res.data;
  
-    return {
+    const track: SpotifyTrack = {
       id: data.item.id,
       name: data.item.name,
-      artists: data.item.artists.map((a: SpotifyArtist) => a.name).join(", "),
-      spotifyUrl: data.item.external_urls.spotify,
-      is_playing: data.is_playing ?? false
-    };
+      artists: data.item.artists.map((a: any) => ({ name: a.name })),
+      external_urls: { spotify: data.item.external_urls.spotify },
+      preview_url: data.item.preview_url
+    }
+
+    return {... track, is_playing: data.is_playing ?? false}
   } catch (err) {
     console.error("Error fetching current track:", err);
     toast.error("Error fetching current track!");

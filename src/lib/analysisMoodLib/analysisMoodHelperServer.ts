@@ -68,7 +68,6 @@ async function analyzeSongCore(
 
     const raw = response.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
     if (!raw) throw new Error("No AI response for song analysis");
-    console.log("Raw: ", raw)
 
     const jsonText = raw.replace(/^```json\s*/i, "").replace(/^```\s*/i, "").replace(/```$/i, "").trim();
     const data = JSON.parse(jsonText);
@@ -99,7 +98,7 @@ export async function analyzeMoodServer(artist: string, songTitle: string, SPOTI
     const coreData = await analyzeSongCore(artist, songTitle);
 
   if (!SPOTIFY_ACCESS_TOKEN) {
-    console.warn("Spotify token missing; recommended track URIs may not be fetched.");
+    console.warn("Spotify token missing: recommended track URIs may not be fetched.");
   }
 
     // Verify recommendedTracks URIs with Spotify API
