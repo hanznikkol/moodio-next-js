@@ -109,7 +109,7 @@ export default function Home() {
       const profile = await getUserProfile(spotifyToken)
       if (profile && trackData) {
         try {
-          const response = await axios.post("/api/save_analysis", {
+          const response = await axios.post("/api/database_server/save_analysis", {
             userProfile: profile,
             track: {
               id: track.id,
