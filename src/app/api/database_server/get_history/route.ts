@@ -1,11 +1,5 @@
 import { supabaseAdmin } from "@/lib/supabase/supabaseServer";
-import { createClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
-
-// const supabaseAdmin = createClient(
-//   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-//   process.env.SUPABASE_SERVICE_ROLE_KEY!
-// );
 
 export async function GET(req: NextRequest) {
     try {
@@ -13,13 +7,13 @@ export async function GET(req: NextRequest) {
         const spotifyId = searchParams.get("spotifyId");
 
         if (!spotifyId) {
-            return NextResponse.json({ error: "Missing userId" }, { status: 400 });
+            return NextResponse.json({ error: "Missing spotify ID" }, { status: 400 });
         }
 
         const { data: user, error: userError } = await supabaseAdmin
             .from("users")
             .select("user_id, spotify_id")
-            .ilike("spotify_id", spotifyId)
+            .eq("spotify_id", spotifyId)
             .single();
 
         if (userError || !user) return NextResponse.json({error: "User not found"}, {status: 404})

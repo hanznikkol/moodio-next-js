@@ -6,17 +6,20 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/co
 import { useSpotify } from '@/lib/spotifyLib/context/spotifyContext';
 import axios from 'axios';
 import { History } from 'lucide-react'
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { FaGithub } from 'react-icons/fa'
 import LoadingSpinner from '../LoadingSpinner';
+import React from 'react';
+import { supabase } from '@/lib/supabase/supabaseClient';
+import ThemeToggleButton from '../Buttons/ThemeToggleButton';
 
 export default function Header() {
   const { profile } = useSpotify();
   const userImage = profile?.images?.[0]?.url;
   const displayName = profile?.display_name || "User";
   const [history, setHistory] = useState<any[]>([]);
-  const [hasFetch, setHasFetched] = useState(false)
   const [loading, setLoading] = useState(false)
+
 
   const handleLogout = () => {
     localStorage.removeItem("spotifyToken");
@@ -24,19 +27,50 @@ export default function Header() {
     window.location.href = "/";
   }
 
-  const fetchHistory = async () => {
-    if (hasFetch || !profile?.id) return
-    setLoading(true);
-    try {
-        const res = await axios.get("/api/database_server/get_history", { params: { spotifyId: profile?.id } })
-        setHistory(res.data)
-        setHasFetched(true)
-    } catch(err: any) {
-        console.error("Error fetching history", err.response?.data || err.message)
-    } finally {
-        setLoading(false)
-    }
-  }
+  const groupDateHistory = history.reduce<Record<string, typeof history>>((acc, item) => {
+    const date = item.created_at.split("T")[0]
+    if (!acc[date]) acc[date] = []
+    acc[date].push(item);
+    return acc
+  }, {})
+
+  const sortedDate = Object.keys(groupDateHistory).sort((a, b) => new Date(b).getTime() - new Date(a).getTime())
+
+  //Fetch History   
+  useEffect(() => {
+    if (!profile?.id) return;
+
+    const fetchHistory = async () => {
+        setLoading(true);
+        try {
+            const res = await axios.get("/api/database_server/get_history", {
+                params: { spotifyId: profile.id },
+            });
+            setHistory(res.data)
+            setLoading(false)
+        } catch (err: any) {
+            console.error("Error fetching history", err.response?.data || err.message);
+            setLoading(false);
+        } finally {
+            setLoading(false)
+        }
+    };
+
+    fetchHistory();
+    
+    const channel = supabase
+        .channel('realtime-analyses')
+        .on('postgres_changes', {event: 'INSERT', schema: 'public', table: 'analyses'}, 
+            (payload: { new: any; }) => {
+                console.log('New analysis:', payload.new);
+                setHistory((prev) => [payload.new, ...prev]);
+            })
+        .subscribe()
+
+    return () => {
+        supabase.removeChannel(channel)
+    };
+  }, [profile?.id])
 
   return (
   <>
@@ -48,7 +82,7 @@ export default function Header() {
             rel="noopener noreferrer"
             href="https://github.com/hanznikkol/moodio-next-js"
         >
-            <FaGithub size={24} className="text-white hover:text-orange-400"/>
+            <FaGithub size={24} className="text-black dark:text-white hover:text-orange-400"/>
         </a>
 
         {profile && (
@@ -82,40 +116,60 @@ export default function Header() {
                 </DropdownMenu>
             </>
         )}
+
+        <ThemeToggleButton />
         
         {/* History */}
         {profile && (
             <>
             <Sheet>
-                <SheetTrigger onClick={fetchHistory}
-                    className="flex items-center gap-2 bg-white/10 hover:bg-white/20 px-3 py-2 text-white rounded-lg transition-all hover:cursor-pointer duration-200 border border-white/10"
+                <SheetTrigger
+                    className="flex items-center gap-2 bg-white/20 hover:bg-white/50 px-3 py-2 text-black dark:text-white rounded-lg transition-all hover:cursor-pointer duration-200 border border-black/20 dark:border-white/10"
                 >
                     <History className="w-5 h-5" />
                     History
                 </SheetTrigger>
 
-                <SheetContent side='right' className='w-[400px] bg-black/90 text-white border-l border-white/10'>
+                <SheetContent side='right' className='w-[400px] bg-white/90 dark:bg-black/90 text-black dark:text-white border-l border-white/10'>
                     <SheetHeader>
-                        <SheetTitle className="text-xl font-bold text-white">
+                        <SheetTitle className="text-xl font-bold text-black dark:text-white">
                             Song History
                         </SheetTitle>
                     </SheetHeader>
 
                     <ScrollArea className='h-[85vh] w-full p-2'>
                         {/* Loading */}
-                        {loading ? ( <LoadingSpinner message="Fetching your song history..." /> ) : 
+                        {loading ? ( <LoadingSpinner color='border-cyan-400' /> ) : 
                            history.length === 0 ? (
-                                    <p className="text-sm text-gray-400 text-center">No history yet.</p>
+                                <p className="text-sm text-gray-400 text-center">No history yet.</p>
                             ) : (
-                                <ul className="space-y-3">
-                                    {history.map((item, i) => (
-                                        <li key={i} className="border border-white/10 rounded-lg p-3 bg-white/5">
-                                        <p className="font-medium">{item.songs?.name}</p>
-                                        <p className="text-sm text-gray-400">{item.songs?.artist}</p>
-                                        <p className="text-xs text-gray-500 mt-1 italic">{item.mood}</p>
-                                        </li>
+                                <div className='space-y-6'>
+                                    {sortedDate.map((date) => (
+                                        <React.Fragment key={date}>
+                                            {/* Date Header */}
+                                            <div>
+                                                <p className="font-semibold text-gray-900 dark:text-white mb-2">
+                                                    {new Date(date).toLocaleDateString()}
+                                                </p>
+                                            </div>
+
+                                            {/* Songs for this date */}
+                                            <ul className='space-y-3'>
+                                               {groupDateHistory[date].map((item) => (
+                                                    <li
+                                                        key={item.analyses_id}
+                                                        className="border border-gray-300 dark:border-white/10 rounded-lg p-3 bg-white/5"
+                                                    >
+                                                        <p className="font-medium">{item.songs?.name}</p>
+                                                        <p className="text-sm text-gray-400">{item.songs?.artist}</p>
+                                                        <p className="text-xs text-gray-500 mt-1 italic">{item.mood}</p>
+                                                        <p className="text-xs text-gray-400 mt-1"> {new Date(item.created_at).toLocaleTimeString()}</p>
+                                                    </li>
+                                               ))}
+                                            </ul>
+                                        </React.Fragment>
                                     ))}
-                                </ul>
+                                </div>
                             )
                         }
                     </ScrollArea>   

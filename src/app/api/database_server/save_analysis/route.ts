@@ -1,11 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
 import { supabaseAdmin } from "@/lib/supabase/supabaseServer";
-
-// const supabaseAdmin = createClient(
-//   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-//   process.env.SUPABASE_SERVICE_ROLE_KEY!
-// );
 
 export async function POST(req: NextRequest) {
   try {
@@ -32,12 +26,12 @@ export async function POST(req: NextRequest) {
         artist: track.artists,
         preview_url: track.preview_url,
         spotify_url: track.spotify_url,
-      })
+      }, {onConflict: "spotify_id"})
       .select("song_id")
       .single();
     if (songError) throw songError;
 
-    // Save analysis
+    // Save analysis (allows duplicate for history cases)
     const { data: analysis, error: analysisError } = await supabaseAdmin
       .from("analyses")
       .insert({

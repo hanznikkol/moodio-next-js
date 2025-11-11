@@ -67,7 +67,7 @@ export const SpotifyProvider = ({children}: {children: React.ReactNode}) => {
         setSpotifyToken(token);
         localStorage.setItem("spotifyToken", token);
         toast.success("Spotify connected successfully!");
-        console.log("Spotify token acquired:", token);
+        // console.log("Spotify token acquired:", token);
         window.history.replaceState({}, document.title, "/");
     }
     

@@ -128,7 +128,7 @@ export default function Home() {
 
     } catch (err) {
       console.error("Analysis error:", err);
-      toast.error("Error analyzing the song mood! Please ");
+      toast.error("Error analyzing the song mood! Please try again.");
       resetPlayback()
 
     } finally {

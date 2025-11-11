@@ -28,7 +28,7 @@ export default function MoodResult({ analysis }: MoodResultProps) {
   // const decodedLyrics = analysis.lyrics || "No lyrics available";
 
   return (
-    <Card className="w-full max-w-md text-white bg-white/10 backdrop-blur-xl border border-white/20 shadow-lg rounded-2xl ">
+    <Card className="w-full max-w-md text-black dark:text-white bg-gray-50/80 dark:bg-white/10 backdrop-blur-xl border border-gray-200 dark:border-white/20 shadow-lg rounded-2xl duration-200">
       <CardHeader>
           <CardTitle 
               style={{
@@ -36,12 +36,12 @@ export default function MoodResult({ analysis }: MoodResultProps) {
                   ? `0 0 8px ${palettes[0]}, 0 0 16px ${palettes[0]}55`
                   : "0 0 8px rgba(255,255,255,0.3)",
               }}
-            className="text-4xl font-extrabold text-center text-white">
+            className="text-4xl font-extrabold text-center text-neutral-700 dark:text-white">
             {analysis.mood || "Unknown"}
           </CardTitle>
       </CardHeader>
 
-      <Separator className=" bg-white/20"/>
+      <Separator className=" bg-gray-200 dark:bg-white/20"/>
 
       <CardContent className="flex flex-col gap-6 justify-center">
         {/* Mood */}
@@ -56,7 +56,7 @@ export default function MoodResult({ analysis }: MoodResultProps) {
                   <TooltipTrigger asChild>
                     <div
                       style={{ backgroundColor: color }}
-                      className="w-8 h-8 rounded-md shadow-sm border border-white/20 cursor-pointer"
+                      className="w-8 h-8 rounded-md shadow-sm border border-gray-300 dark:border-white/20 cursor-pointer"
                     />
                   </TooltipTrigger>
                   <TooltipContent>
@@ -67,6 +67,7 @@ export default function MoodResult({ analysis }: MoodResultProps) {
             </div>
           </TooltipProvider>
         )}
+
         {/* Lyrics soon feature */}
         {/* 
           <div className="flex flex-col w-full max-w-md">
@@ -85,7 +86,7 @@ export default function MoodResult({ analysis }: MoodResultProps) {
             <h3 className="text-lg font-semibold mb-3 text-center">Top Recommended Tracks</h3>
 
             {/* Recommended List */}
-            <div className="bg-white/5 border border-white/10 rounded-xl overflow-hidden shadow-sm"> 
+            <div className="bg-gray-100 dark:bg-white/5 border border-white/10 rounded-xl overflow-hidden shadow-sm"> 
               <div>
                 <ul className="flex flex-col">
                   {analysis.recommendedTracks.slice(0, 5).map((track, index) => (
@@ -104,15 +105,15 @@ export default function MoodResult({ analysis }: MoodResultProps) {
                           priority={false}
                         />
                       ) : (
-                        <div className="w-12 h-12 rounded-md bg-white/10 flex items-center justify-center flex-shrink-0">
-                          <Music className="w-6 h-6 text-white/50" />
+                        <div className="w-12 h-12 rounded-md bg-gray-200 dark:bg-white/10 flex items-center justify-center flex-shrink-0">
+                          <Music className="w-6 h-6 text-gray-500 dark:text-white/50" />
                         </div>
                       )}
 
                       {/* Track Info */}
                       <div className="flex flex-col flex-1 overflow-hidden">
-                        <span className="font-semibold text-white truncate">{track.name}</span>
-                        <span className="text-xs text-white/70 truncate">{track.artist}</span>
+                        <span className="font-semibold text-gray-900 dark:text-white truncate">{track.name}</span>
+                        <span className="text-xs text-gray-600 dark:text-white/70 truncate">{track.artist}</span>
                       </div>
                       
                       {/* Spotify Link */}
