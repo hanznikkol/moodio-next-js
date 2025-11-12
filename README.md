@@ -2,6 +2,10 @@
 
 **Moodio** is a **Next.js web app** that analyzes the mood of your Spotify tracks using **Gemini AI** and keeps a history of your music listening. Even though it’s not deployed yet, you can run it locally and explore your music insights.  
 
+![Moodio Home Page](public/img/moodio_screenshot.png)
+![Moodio Home Page Light](public/img/moodio_screenshot_light.png)
+
+
 ## Features
 
 - **Music Mood Analysis:** Analyze the mood of your Spotify tracks with Gemini AI.  
