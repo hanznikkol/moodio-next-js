@@ -20,7 +20,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Moodio",
-  description: "",
+  description: "Mood Analyzer Web App Powered by Gemini AI",
 };
 
 export default function RootLayout({

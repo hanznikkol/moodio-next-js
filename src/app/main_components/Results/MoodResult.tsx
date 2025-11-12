@@ -28,7 +28,7 @@ export default function MoodResult({ analysis }: MoodResultProps) {
   // const decodedLyrics = analysis.lyrics || "No lyrics available";
 
   return (
-    <Card className="w-full max-w-md text-black dark:text-white bg-gray-50/80 dark:bg-white/10 backdrop-blur-xl border border-gray-200 dark:border-white/20 shadow-lg rounded-2xl duration-200">
+    <Card className="w-full max-w-md lg:max-w-md  text-black dark:text-white bg-gray-50/80 dark:bg-white/10 backdrop-blur-xl border border-gray-200 dark:border-white/20 shadow-lg rounded-2xl duration-200">
       <CardHeader>
           <CardTitle 
               style={{
@@ -36,7 +36,7 @@ export default function MoodResult({ analysis }: MoodResultProps) {
                   ? `0 0 8px ${palettes[0]}, 0 0 16px ${palettes[0]}55`
                   : "0 0 8px rgba(255,255,255,0.3)",
               }}
-            className="text-4xl font-extrabold text-center text-neutral-700 dark:text-white">
+            className="text-3xl md:text-4xl font-bold lg:font-extrabold text-center text-neutral-700 dark:text-white">
             {analysis.mood || "Unknown"}
           </CardTitle>
       </CardHeader>
@@ -50,7 +50,7 @@ export default function MoodResult({ analysis }: MoodResultProps) {
         {/* Color Palette */}
         {analysis?.colorPalette?.length > 0 && (
           <TooltipProvider>
-            <div className="flex gap-2 justify-center">
+            <div className="flex flex-wrap gap-2 justify-center">
               {analysis.colorPalette.map((color) => (
                 <Tooltip key={color}>
                   <TooltipTrigger asChild>
@@ -88,7 +88,7 @@ export default function MoodResult({ analysis }: MoodResultProps) {
             {/* Recommended List */}
             <div className="bg-gray-100 dark:bg-white/5 border border-white/10 rounded-xl overflow-hidden shadow-sm"> 
               <div>
-                <ul className="flex flex-col">
+                <ul className="flex flex-col gap-2">
                   {analysis.recommendedTracks.slice(0, 5).map((track, index) => (
                     <li key={track.id || track.name}
                         className="flex items-center gap-3 p-3 hover:bg-white/10 transition-colors border-b border-white/10"
@@ -105,7 +105,7 @@ export default function MoodResult({ analysis }: MoodResultProps) {
                           priority={false}
                         />
                       ) : (
-                        <div className="w-12 h-12 rounded-md bg-gray-200 dark:bg-white/10 flex items-center justify-center flex-shrink-0">
+                        <div className="w-9 h-9 sm:w-12 sm:h-12  rounded-md bg-gray-200 dark:bg-white/10 flex items-center justify-center flex-shrink-0">
                           <Music className="w-6 h-6 text-gray-500 dark:text-white/50" />
                         </div>
                       )}
