@@ -17,7 +17,7 @@
 ## Tech Stack
 
 - **Next.js 13+** (App Router)    
-- **Supabase** for user authentication and history storage  
+- **Supabase** history storage  
 - **Spotify API** for fetching user tracks  
 - **Gemini AI** for mood analysis    
 
