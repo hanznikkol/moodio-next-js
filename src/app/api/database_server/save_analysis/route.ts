@@ -1,8 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/supabaseServer";
+import { createSupabaseClient } from "@/lib/supabase/supabaseClient";
 
 export async function POST(req: NextRequest) {
   try {
+
+    const jwt = req.headers.get("Authorization")?.replace("Bearer ", "");
+    if (!jwt) throw new Error("Missing JWT");
+    const supabase = createSupabaseClient(jwt);
+
     const { userProfile, track, analysisResult } = await req.json();
 
     // Upsert user
@@ -56,6 +62,7 @@ export async function POST(req: NextRequest) {
         image: r.image,
         uri: r.uri,
       }));
+
       const { error: recError } = await supabaseAdmin
         .from("recommended_tracks")
         .insert(recs);
@@ -63,6 +70,7 @@ export async function POST(req: NextRequest) {
     }
 
     return NextResponse.json({ saved: analysis });
+    
   } catch (err: any) {
     console.error("Error in API route:", err);
     return NextResponse.json({ error: err.message || "Server error" }, { status: 500 });

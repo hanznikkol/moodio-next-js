@@ -14,5 +14,7 @@ export type AnalysisResult = {
   spotifyTrackId?: string;
   lyrics?: string | null;
   recommendedTracks: RecommendedTrack[];
+  trackName: string;
+  trackArtist: string
 }
     

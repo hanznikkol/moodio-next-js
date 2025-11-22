@@ -25,7 +25,7 @@ export default function ThemeToggleButton() {
         `}
       >
         <Sun className={`absolute top-1/2 left-1/2 w-5 h-5 -translate-x-1/2 -translate-y-1/2
-              transition-all duration-300 ${isDark ? "opacity-0 scale-0" : "opacity-100 scale-100"} text-yellow-400`} />
+              transition-all duration-300 ${isDark ? "opacity-0 scale-0" : "opacity-100 scale-100"} text-yellow-500`} />
         <Moon className={`absolute top-1/2 left-1/2 w-5 h-5 -translate-x-1/2 -translate-y-1/2
               transition-all duration-300 ${isDark ? "opacity-100 scale-100" : "opacity-0 scale-0"} text-cyan-400`} />
       </Button>

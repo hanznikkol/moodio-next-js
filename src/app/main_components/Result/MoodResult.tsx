@@ -12,17 +12,6 @@ interface MoodResultProps {
   analysis: AnalysisResult;
 }
 
-// FUTURE FEATURE (Lyrics)
-// function safeBase64Decode(str?: string){
-//   if(!str) return null
-//   try {
-//     return atob(str);
-//   } catch {
-//     console.warn("Invalid Base64 lyrics");
-//     return "Lyrics unavailable";
-//   }
-// }
-
 export default function MoodResult({ analysis }: MoodResultProps) {
   const palettes = analysis?.colorPalette || [] 
   // const decodedLyrics = analysis.lyrics || "No lyrics available";
@@ -91,9 +80,8 @@ export default function MoodResult({ analysis }: MoodResultProps) {
                 <ul className="flex flex-col gap-2">
                   {analysis.recommendedTracks.slice(0, 5).map((track, index) => (
                     <li key={track.id || track.name}
-                        className="flex items-center gap-3 p-3 hover:bg-white/10 transition-colors border-b border-white/10"
+                        className="flex items-center gap-3 p-3 transition-colors border-b border-black/10 dark:border-white/10"
                     >
-
                       {/* Album */}
                       {track.image ? (
                         <Image

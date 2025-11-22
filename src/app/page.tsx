@@ -4,13 +4,14 @@ import SpotifyButton from "./main_components/Buttons/SpotifyButton";
 import { toast } from "sonner";
 import type { AnalysisResult } from "@/lib/analysisMoodLib/analysisResult";
 import LoadingSpinner from "./main_components/LoadingSpinner";
-import LogoHeader from "./main_components/LogoHeader";
-import PlayPrompt from "./main_components/PlayPrompt";
+import HeroHeader from "./main_components/HeroHeader";
 import { getCurrentTrack, getUserProfile } from "@/lib/spotifyLib/spotifyHelper";
 import { useSpotify } from "@/lib/spotifyLib/context/spotifyContext";
 import { analyzeMood } from "@/lib/analysisMoodLib/analysisMoodHelper";
-import MoodResult from "./main_components/Results/MoodResult";
+import MoodResult from "./main_components/Result/MoodResult";
 import axios from "axios";
+import PlayPromptButton from "./main_components/Buttons/PlayPromptButton";
+import { useMood } from "@/lib/history/context/moodHistoryContext";
 
 export default function Home() {
   // Spotify context
@@ -23,11 +24,19 @@ export default function Home() {
     resetAll,
   } = useSpotify();
 
+  const {
+    selectedAnalysis,
+    setSelectedAnalysis,
+    showResults,
+    setShowResults
+  } = useMood();
+
   // State variables
   const [selectedTrackID, setSelectedTrackID] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [showResults, setShowResults] = useState(false);
+  // const [showResults, setShowResults] = useState(false);
   const [moodAnalysis, setMoodAnalysis] = useState<AnalysisResult | null>(null);
+  // const [selectedAnalysis, setSelectedAnalysis] = useState<AnalysisResult | null>(null);
   const [currentTrack, setCurrentTrack] = useState<{ name: string; artists: string } | null>(null);
 
   const analyzedTracks = useRef<Set<string>>(new Set());
@@ -40,7 +49,6 @@ export default function Home() {
       window.location.href = "/api/spotify/login";
     }
   }
-
   const handleAnalyzeAnotherSong = () => {
     resetPlayback()
     checkPlayback()
@@ -52,12 +60,16 @@ export default function Home() {
     analyzedTracks.current.clear();
     if (pollingRef.current) clearInterval(pollingRef.current);
     isAnalyzingRef.current = false;
+    // Reset Spotify states
     setSelectedTrackID(null);
     setCurrentTrack(null);
-    setShowResults(false);
     setMoodAnalysis(null);
     setShowPrompt(true);
-  }, [setShowPrompt]);
+
+    // Reset mood history selection
+    setSelectedAnalysis(null);
+    setShowResults(false);
+  }, [setShowPrompt, setSelectedAnalysis, setShowResults]);
 
   // Check current Spotify Playback
   const checkPlayback = useCallback(async () => {
@@ -119,6 +131,10 @@ export default function Home() {
               spotify_url: track.external_urls.spotify,
             },
             analysisResult: result,
+          }, {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("appJWT")}`
+            }
           })
         } catch (err : any) {
           console.error("Error saving analysis:", err.response?.data || err.message);
@@ -171,16 +187,24 @@ export default function Home() {
     }
   }, [spotifyToken, showPrompt, loading, showResults, setShowPrompt]);
 
+  // Hide prompt when a history item is selected
+  useEffect(() => {
+    if (selectedAnalysis) {
+      setShowPrompt(false);
+    }
+  }, [selectedAnalysis, setShowPrompt]);
 
   return (
     <div className="flex flex-col items-center p-8 w-full gap-6">
-      {/* Header */}
-      <LogoHeader
+      {/* Hero Header */}
+      <HeroHeader
         selectedTrackID={selectedTrackID}
         spotifyToken={spotifyToken}
         loading={loading}
         trackName={currentTrack?.name ?? null}
         trackArtist={currentTrack?.artists ?? null}
+        historyTrackName={selectedAnalysis?.trackName ?? null}
+        historyTrackArtist={selectedAnalysis?.trackArtist ?? null}
       />
 
       {/* Spotify Button */}
@@ -195,19 +219,19 @@ export default function Home() {
       {/* Connecting state */}
       {connecting && !selectedTrackID && !spotifyToken && <LoadingSpinner message="Connecting to Spotify"/>}
 
-      {/* Play song from spotify */}
-      {showPrompt && <PlayPrompt />}
+      {/* Play song from Spotify */}
+      {spotifyToken && showPrompt && <PlayPromptButton />}
 
       {/* Mood Analysis Results */}
-      {!loading && selectedTrackID && showResults && moodAnalysis && <MoodResult analysis={moodAnalysis} />}
-
-      {/* Analyze another song */}
-      {!loading && selectedTrackID && showResults && moodAnalysis && (       
-        <div>
-          <SpotifyButton label="Analyze another song" onClick={handleAnalyzeAnotherSong}/>
-        </div>
+      {spotifyToken && (selectedAnalysis || (!loading && selectedTrackID && showResults && moodAnalysis)) && (
+        <MoodResult analysis={selectedAnalysis ?? moodAnalysis!} />
       )}
 
+      {/* Analyze another song */}
+      {spotifyToken && !loading && (moodAnalysis || selectedAnalysis) && (
+        <SpotifyButton label="Analyze another song" onClick={handleAnalyzeAnotherSong} />
+      )}
+      
     </div>
   );
 }

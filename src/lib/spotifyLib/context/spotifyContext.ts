@@ -7,6 +7,7 @@ import { toast } from "sonner";
 interface SpotifyContextType {
   spotifyToken: string | null;
   refreshToken: string | null;
+  appJWT: string | null; 
   profile: SpotifyUserProfile | null;
   connecting: boolean;
   showPrompt: boolean;
@@ -22,6 +23,7 @@ const SpotifyContext = createContext<SpotifyContextType | undefined>(undefined);
 export const SpotifyProvider = ({children}: {children: React.ReactNode}) => {
   const [spotifyToken, setSpotifyToken] = useState<string | null>(null);
   const [refreshToken, setRefreshToken] = useState<string | null>(null);
+  const [appJWT, setAppJWT] = useState<string | null>(null);
   const [profile, setProfile] = useState<SpotifyUserProfile | null>(null);
   const [connecting, setConnecting] = useState(false);
   const [showPrompt, setShowPrompt] = useState(false);
@@ -41,6 +43,7 @@ export const SpotifyProvider = ({children}: {children: React.ReactNode}) => {
     }
     localStorage.removeItem("spotifyToken");
     localStorage.removeItem("spotifyRefreshToken");
+    localStorage.removeItem("appJWT")
     }, [])
 
   // Fetch profile when spotifyToken changes
@@ -48,6 +51,7 @@ export const SpotifyProvider = ({children}: {children: React.ReactNode}) => {
     const params = new URLSearchParams(window.location.search);
     const token = params.get("access_token");
     const refresh = params.get("refresh_token");
+    const app_jwt = params.get("app_jwt")
     const error = params.get("error");
 
     if (error) {
@@ -74,6 +78,11 @@ export const SpotifyProvider = ({children}: {children: React.ReactNode}) => {
     if (refresh) {
         setRefreshToken(refresh);
         localStorage.setItem("spotifyRefreshToken", refresh);
+    }
+
+    if (app_jwt) {
+      setAppJWT(app_jwt);
+      localStorage.setItem("appJWT", app_jwt);
     }
 
     // Immediate refresh if saved refresh token exists
@@ -119,7 +128,7 @@ export const SpotifyProvider = ({children}: {children: React.ReactNode}) => {
 
   return createElement(
       SpotifyContext.Provider,
-      { value: { spotifyToken, refreshToken, profile, connecting, showPrompt, setSpotifyToken, setRefreshToken, setConnecting, setShowPrompt, resetAll } },
+      { value: { spotifyToken, refreshToken, appJWT, profile, connecting, showPrompt, setSpotifyToken, setRefreshToken, setConnecting, setShowPrompt, resetAll } },
       children
   );
 }

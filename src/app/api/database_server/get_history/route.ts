@@ -27,8 +27,14 @@ export async function GET(req: NextRequest) {
             color_palette,
             created_at,
             songs (
-            name,
-            artist
+                name,
+                artist
+            ),
+            recommended_tracks (
+                name,
+                artists,
+                uri,
+                image
             ),
             users (
             spotify_id
@@ -38,7 +44,7 @@ export async function GET(req: NextRequest) {
         .order("created_at", { ascending: false });
         
         if(error) return NextResponse.json({error: error.message}, {status: 500})
-        console.log(data)
+        // console.log(data)
         return NextResponse.json(data)
     } catch (err: any) {
         console.error("Error in API route:", err);
