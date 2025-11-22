@@ -176,6 +176,13 @@ export default function HistorySheet({onSelectHistory}: HistorySheetProps) {
                         <p className="font-medium">{item.songs?.name}</p>
                         <p className="text-sm text-gray-400">{item.songs?.artist}</p>
                         <p className="text-xs italic">{item.mood}</p>
+
+                        {item.count > 1 && (
+                            <p className="text-xs text-cyan-400">
+                                analyzed {item.count} times
+                            </p>
+                        )}
+                        
                         <p className="text-xs text-gray-400">
                           Latest: {new Date(item.latestTime).toLocaleTimeString()}
                         </p>
