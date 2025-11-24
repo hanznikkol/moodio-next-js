@@ -8,7 +8,7 @@ const nextConfig: NextConfig = {
       hostname: "i.scdn.co",
       pathname: "/**",
     }]
-  }
+  },
 };
 
 export default nextConfig;

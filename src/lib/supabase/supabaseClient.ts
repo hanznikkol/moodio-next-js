@@ -6,9 +6,7 @@ export const createSupabaseClient = (jwt: string | null) => {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       global: {
-        headers: {
-          Authorization: jwt ? `Bearer ${jwt}` : "",
-        },
+        headers: jwt ? { Authorization: `Bearer ${jwt}` } : {},
       },
     }
   );

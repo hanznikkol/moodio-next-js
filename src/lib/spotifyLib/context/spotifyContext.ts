@@ -2,11 +2,13 @@
 import { createContext, createElement, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { SpotifyUserProfile } from "../spotifyTypes";
 import { getUserProfile, refreshAccessToken } from "../spotifyHelper";
+import { jwtDecode } from 'jwt-decode'
 import { toast } from "sonner";
 
 interface SpotifyContextType {
   spotifyToken: string | null;
   refreshToken: string | null;
+  userId: string | null;
   appJWT: string | null; 
   profile: SpotifyUserProfile | null;
   connecting: boolean;
@@ -18,11 +20,17 @@ interface SpotifyContextType {
   resetAll: () => void;
 }
 
+interface AppJWTPayload {
+  sub: string; // this is your user_id
+  exp: number;
+}
+
 const SpotifyContext = createContext<SpotifyContextType | undefined>(undefined);
 
 export const SpotifyProvider = ({children}: {children: React.ReactNode}) => {
   const [spotifyToken, setSpotifyToken] = useState<string | null>(null);
   const [refreshToken, setRefreshToken] = useState<string | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
   const [appJWT, setAppJWT] = useState<string | null>(null);
   const [profile, setProfile] = useState<SpotifyUserProfile | null>(null);
   const [connecting, setConnecting] = useState(false);
@@ -45,6 +53,21 @@ export const SpotifyProvider = ({children}: {children: React.ReactNode}) => {
     localStorage.removeItem("spotifyRefreshToken");
     localStorage.removeItem("appJWT")
     }, [])
+
+  useEffect(() => {
+  if (!appJWT) {
+      setUserId(null);
+      return;
+    }
+
+    try {
+      const decoded: AppJWTPayload = jwtDecode(appJWT);
+      setUserId(decoded.sub);
+    } catch (err) {
+      console.error("Failed to decode app JWT", err);
+      setUserId(null);
+    }
+  }, [appJWT]);
 
   // Fetch profile when spotifyToken changes
   useEffect(() => {
@@ -128,7 +151,7 @@ export const SpotifyProvider = ({children}: {children: React.ReactNode}) => {
 
   return createElement(
       SpotifyContext.Provider,
-      { value: { spotifyToken, refreshToken, appJWT, profile, connecting, showPrompt, setSpotifyToken, setRefreshToken, setConnecting, setShowPrompt, resetAll } },
+      { value: { spotifyToken, refreshToken, userId, appJWT, profile, connecting, showPrompt, setSpotifyToken, setRefreshToken, setConnecting, setShowPrompt, resetAll } },
       children
   );
 }

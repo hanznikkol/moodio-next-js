@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useState, ReactNode } from "react";
 import { AnalysisResult } from "@/lib/analysisMoodLib/analysisResult";
+import { MergedHistoryItem } from "../historyTypes";
 
 interface MoodContextType {
   // History analysis
@@ -30,6 +31,7 @@ export const MoodProvider = ({ children }: { children: ReactNode }) => {
   const [selectedTrackID, setSelectedTrackID] = useState<string | null>(null);
   const [currentTrack, setCurrentTrack] = useState<{ name: string; artists: string } | null>(null);
   const [moodAnalysis, setMoodAnalysis] = useState<AnalysisResult | null>(null);
+  const [history, setHistory] = useState<MergedHistoryItem[]>([]);
   const [showPrompt, setShowPrompt] = useState(false);
 
   return (
@@ -38,7 +40,7 @@ export const MoodProvider = ({ children }: { children: ReactNode }) => {
         selectedAnalysis,
         setSelectedAnalysis,
         showResults,
-        setShowResults,
+        setShowResults,  
         selectedTrackID,
         setSelectedTrackID,
         currentTrack,

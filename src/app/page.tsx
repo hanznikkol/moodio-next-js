@@ -9,34 +9,29 @@ import { getCurrentTrack, getUserProfile } from "@/lib/spotifyLib/spotifyHelper"
 import { useSpotify } from "@/lib/spotifyLib/context/spotifyContext";
 import { analyzeMood } from "@/lib/analysisMoodLib/analysisMoodHelper";
 import MoodResult from "./main_components/Result/MoodResult";
-import axios from "axios";
 import PlayPromptButton from "./main_components/Buttons/PlayPromptButton";
 import { useMood } from "@/lib/history/context/moodHistoryContext";
+import axios from "axios";
 
 export default function Home() {
-  // Spotify context
   const {
     spotifyToken,
     connecting,
     showPrompt,
     setConnecting,
     setShowPrompt,
-    resetAll,
   } = useSpotify();
 
   const {
     selectedAnalysis,
     setSelectedAnalysis,
     showResults,
-    setShowResults
+    setShowResults,
   } = useMood();
 
-  // State variables
   const [selectedTrackID, setSelectedTrackID] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  // const [showResults, setShowResults] = useState(false);
   const [moodAnalysis, setMoodAnalysis] = useState<AnalysisResult | null>(null);
-  // const [selectedAnalysis, setSelectedAnalysis] = useState<AnalysisResult | null>(null);
   const [currentTrack, setCurrentTrack] = useState<{ name: string; artists: string } | null>(null);
 
   const analyzedTracks = useRef<Set<string>>(new Set());

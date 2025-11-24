@@ -7,7 +7,6 @@ export async function POST(req: NextRequest) {
 
     const jwt = req.headers.get("Authorization")?.replace("Bearer ", "");
     if (!jwt) throw new Error("Missing JWT");
-    const supabase = createSupabaseClient(jwt);
 
     const { userProfile, track, analysisResult } = await req.json();
 
