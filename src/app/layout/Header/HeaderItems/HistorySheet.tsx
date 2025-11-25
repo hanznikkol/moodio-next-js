@@ -1,8 +1,8 @@
-"use client";
+'use client'
 
 import { History, RefreshCw } from "lucide-react";
 import axios from "axios";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { useSpotify } from "@/lib/spotifyLib/context/spotifyContext";
@@ -12,14 +12,18 @@ import { AnalysisResult } from "@/lib/analysisMoodLib/analysisResult";
 import { mergeHistoryBySong } from "@/lib/history/historyHelper";
 
 interface HistorySheetProps {
-    onSelectHistory: (analysis: AnalysisResult) => void
+  onSelectHistory: (analysis: AnalysisResult) => void
 }
 
-export default function HistorySheet({onSelectHistory}: HistorySheetProps) {
-  const { profile } = useSpotify();;
+export default function HistorySheet({ onSelectHistory }: HistorySheetProps) {
+  const { profile } = useSpotify();
   const [history, setHistory] = useState<MergedHistoryItem[]>([]);
   const [loading, setLoading] = useState(false);
-  const [openSheet, setOpenSheet] = useState(false)
+  const [openSheet, setOpenSheet] = useState(false);
+  const [loadingItemId, setLoadingItemId] = useState<string | null>(null);
+
+  // Cache analyses to avoid repeated API calls
+  const analysesCache = useRef<Record<string, AnalysisResult>>({});
 
   if (!profile) return null;
 
@@ -42,34 +46,47 @@ export default function HistorySheet({onSelectHistory}: HistorySheetProps) {
     if (history.length === 0) await fetchHistory();
   };
 
-  //Handle Click
   const handleClickItem = async (item: MergedHistoryItem) => {
-    try {
-        const res = await axios.get('/api/database_server/get_analyses_by_id', {
-            params: { analysesId: item.analyses_id }
-        })
+    // If cached, use it immediately
+    if (analysesCache.current[item.analyses_id]) {
+      onSelectHistory(analysesCache.current[item.analyses_id]);
+      return;
+    }
 
-        const raw: any = res.data;
-        const analysis: AnalysisResult = {
-            mood: raw.mood,
-            explanation: raw.explanation,
-            colorPalette: raw.color_palette || [],
-            lyrics: raw.lyrics ?? null,
-            spotifyTrackId: raw.spotify_track_id,
-            recommendedTracks: (raw.recommended_tracks || []).map((t: any) => ({
-                id: t.id,
-                name: t.name,
-                artist: t.artists,
-                note: t.note,
-                image: t.image,
-                uri: t.uri,
-            })),
-            trackName: item.songs?.name ?? "Unknown",
-            trackArtist: item.songs?.artist ?? "Unknown"
-        };
-        onSelectHistory(analysis)
-    } catch(err) {1111
-        console.error("Error fetching analysis by ID:", err);
+    try {
+      setLoadingItemId(item.analyses_id);
+
+      const res = await axios.get('/api/database_server/get_analyses_by_id', {
+        params: { analysesId: item.analyses_id }
+      });
+
+      const raw = res.data;
+      const analysis: AnalysisResult = {
+        mood: raw.mood,
+        explanation: raw.explanation,
+        colorPalette: raw.color_palette || [],
+        lyrics: raw.lyrics ?? null,
+        spotifyTrackId: raw.spotify_track_id,
+        recommendedTracks: (raw.recommended_tracks || []).map((t: any) => ({
+          id: t.id,
+          name: t.name,
+          artist: t.artists,
+          note: t.note,
+          image: t.image,
+          uri: t.uri,
+        })),
+        trackName: item.songs?.name ?? "Unknown",
+        trackArtist: item.songs?.artist ?? "Unknown"
+      };
+
+      // Cache it
+      analysesCache.current[item.analyses_id] = analysis;
+      onSelectHistory(analysis);
+
+    } catch (err) {
+      console.error("Error fetching analysis by ID:", err);
+    } finally {
+      setLoadingItemId(null);
     }
   }
 
@@ -88,7 +105,7 @@ export default function HistorySheet({onSelectHistory}: HistorySheetProps) {
     <Sheet open={openSheet} onOpenChange={setOpenSheet}>
       <SheetTrigger onClick={handleOpenSheet} className="flex items-center gap-2 bg-white/20 hover:bg-white/50 px-3 py-2 text-black dark:text-white rounded-lg transition-all hover:cursor-pointer duration-200 border border-black/20 dark:border-white/10">
         <History className="w-5 h-5" />
-            History
+        History
       </SheetTrigger>
 
       <SheetContent side="right" className="w-[300px] lg:w-[400px]">
@@ -122,18 +139,18 @@ export default function HistorySheet({onSelectHistory}: HistorySheetProps) {
                         key={item.analyses_id}
                         className="group cursor-pointer border hover:border-cyan-400 hover:bg-white/10 transition-colors duration-200 rounded-lg p-3 bg-white/5 flex flex-col gap-1"
                         onClick={() => handleClickItem(item)}
-
                       >
-                        <p className="font-medium">{item.songs?.name}</p>
-                        <p className="text-sm text-gray-400">{item.songs?.artist}</p>
-                        <p className="text-xs italic">{item.mood}</p>
-
-                        {item.count > 1 && (
-                            <p className="text-xs text-cyan-400">
-                                analyzed {item.count} times
-                            </p>
-                        )}
-                        
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="font-medium">{item.songs?.name}</p>
+                            <p className="text-sm text-gray-400">{item.songs?.artist}</p>
+                            <p className="text-xs italic">{item.mood}</p>
+                            {item.count > 1 && (
+                              <p className="text-xs text-cyan-400">analyzed {item.count} times</p>
+                            )}
+                          </div>
+                          {loadingItemId === item.analyses_id && <LoadingSpinner color="border-cyan-400" size="small" />}
+                        </div>
                         <p className="text-xs text-gray-400">
                           Latest: {new Date(item.latestTime).toLocaleTimeString()}
                         </p>

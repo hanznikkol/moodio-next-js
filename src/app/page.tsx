@@ -119,6 +119,13 @@ export default function Home() {
     return () => document.removeEventListener("visibilitychange", handleVisibility);
   }, []);
 
+  useEffect(() => {
+    if (selectedAnalysis) {
+      setShowPrompt(false); 
+    } else if (spotifyToken && !selectedTrackID) {
+      setShowPrompt(true);
+    }
+  }, [selectedAnalysis, spotifyToken, selectedTrackID, setShowPrompt]);
 
   const handleSpotifyClick = () => {
     if (!spotifyToken) {
@@ -156,7 +163,7 @@ export default function Home() {
       {connecting && !selectedTrackID && !spotifyToken && <LoadingSpinner message="Connecting to Spotify"/>}
 
       {/* Play song from Spotify */}
-      {spotifyToken && !selectedTrackID && !loading && <PlayPromptButton />}
+      {spotifyToken && showPrompt && <PlayPromptButton />}
 
       {/* Mood Analysis Results */}
       {spotifyToken && (selectedAnalysis || (!loading && selectedTrackID && showResults && moodAnalysis)) && (
