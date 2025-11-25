@@ -20,3 +20,4 @@ export interface SpotifyUserProfile {
     id: string;
     images: { url: string }[];
 }
+

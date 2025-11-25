@@ -27,8 +27,13 @@ export const getCurrentTrack = async (accessToken: string): Promise<SpotifyTrack
       headers: { Authorization: `Bearer ${accessToken}` }
     });
 
-    if (res.status === 204 || !res.data?.item) return null; // nothing playing
-
+    if (
+      res.status === 204 || 
+      !res.data?.item || 
+      res.data.is_playing === false
+    ) {
+      return null;
+    }
     const data = res.data;
  
     const track: SpotifyTrack = {

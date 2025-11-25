@@ -6,8 +6,9 @@ import { Toaster } from "sonner";
 import Header from "./layout/Header/Header";
 import Footer from "./layout/Footer/Footer";
 import { SpotifyProvider } from "@/lib/spotifyLib/context/spotifyContext";
-import { ThemeProvider } from "./main_components/ThemeProvider";
+import { ThemeProvider } from "./main_components/Providers/ThemeProvider";
 import { MoodProvider } from "@/lib/history/context/moodHistoryContext";
+import TanStackQueryProvider from "./main_components/Providers/TanStackQueryProvider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -32,24 +33,26 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`} >
-        <ThemeProvider>
-        <SpotifyProvider>
-          <MoodProvider>
-            <Toaster richColors position="bottom-right" className="z-[50]"/>
-            <div className="relative flex flex-col items-center justify-center min-h-screen overflow-y-auto overflow-x-hidden bg-white dark:bg-black select-none duration-200">
-              <EdgeGlow/>
-              {/* Header Navigation */}
-              <Header/>
-              {/* Main Content */}
-              <div className="relative z-10 w-full h-full flex flex-col items-center justify-center my-16">
-                {children}
-              </div>
-              {/* Footer */}
-              <Footer/>
-            </div>
-          </MoodProvider>
-        </SpotifyProvider>
-        </ThemeProvider>
+        <TanStackQueryProvider>
+          <ThemeProvider>
+            <SpotifyProvider>
+              <MoodProvider>
+                <Toaster richColors position="bottom-right" className="z-[50]"/>
+                <div className="relative flex flex-col items-center justify-center min-h-screen overflow-y-auto overflow-x-hidden bg-white dark:bg-black select-none duration-200">
+                  <EdgeGlow/>
+                  {/* Header Navigation */}
+                  <Header/>
+                  {/* Main Content */}
+                  <div className="relative z-10 w-full h-full flex flex-col items-center justify-center my-16">
+                    {children}
+                  </div>
+                  {/* Footer */}
+                  <Footer/>
+                </div>
+              </MoodProvider>
+            </SpotifyProvider>
+          </ThemeProvider>
+        </TanStackQueryProvider>
       </body>
     </html>
   );

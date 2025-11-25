@@ -16,5 +16,11 @@ export type AnalysisResult = {
   recommendedTracks: RecommendedTrack[];
   trackName: string;
   trackArtist: string
-}
-    
+}    
+
+export type PlaybackState = {
+  selectedTrackID: string | null;
+  currentTrack: { name: string; artists: string } | null;
+  moodAnalysis: AnalysisResult | null;
+  loading: boolean;
+};

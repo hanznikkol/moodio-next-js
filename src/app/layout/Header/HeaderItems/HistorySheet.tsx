@@ -68,7 +68,7 @@ export default function HistorySheet({onSelectHistory}: HistorySheetProps) {
             trackArtist: item.songs?.artist ?? "Unknown"
         };
         onSelectHistory(analysis)
-    } catch(err) {
+    } catch(err) {1111
         console.error("Error fetching analysis by ID:", err);
     }
   }

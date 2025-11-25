@@ -3,6 +3,7 @@ import { useEffect, useState, useRef, useCallback } from "react";
 import SpotifyButton from "./main_components/Buttons/SpotifyButton";
 import { toast } from "sonner";
 import type { AnalysisResult } from "@/lib/analysisMoodLib/analysisResult";
+import { useQuery } from '@tanstack/react-query'
 import LoadingSpinner from "./main_components/LoadingSpinner";
 import HeroHeader from "./main_components/HeroHeader";
 import { getCurrentTrack, getUserProfile } from "@/lib/spotifyLib/spotifyHelper";
@@ -12,31 +13,112 @@ import MoodResult from "./main_components/Result/MoodResult";
 import PlayPromptButton from "./main_components/Buttons/PlayPromptButton";
 import { useMood } from "@/lib/history/context/moodHistoryContext";
 import axios from "axios";
+import { SpotifyTrack } from "@/lib/spotifyLib/spotifyTypes";
 
 export default function Home() {
-  const {
-    spotifyToken,
-    connecting,
-    showPrompt,
-    setConnecting,
-    setShowPrompt,
-  } = useSpotify();
-
-  const {
-    selectedAnalysis,
-    setSelectedAnalysis,
-    showResults,
-    setShowResults,
-  } = useMood();
+  const { spotifyToken, connecting, showPrompt, setConnecting, setShowPrompt } = useSpotify();
+  const { selectedAnalysis, setSelectedAnalysis, showResults, setShowResults } = useMood();
 
   const [selectedTrackID, setSelectedTrackID] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [moodAnalysis, setMoodAnalysis] = useState<AnalysisResult | null>(null);
   const [currentTrack, setCurrentTrack] = useState<{ name: string; artists: string } | null>(null);
+  const [moodAnalysis, setMoodAnalysis] = useState<AnalysisResult | null>(null);
+  const [isVisible, setIsVisible] = useState(true);
+  const [loading, setLoading] = useState(false);
 
   const analyzedTracks = useRef<Set<string>>(new Set());
-  const pollingRef = useRef<NodeJS.Timeout | null>(null);
-  const isAnalyzingRef = useRef(false);
+  const isAnalyzing = useRef(false);
+
+  const resetPlayback = useCallback(() => {
+    analyzedTracks.current.clear();
+    isAnalyzing.current = false;
+    setSelectedTrackID(null);
+    setCurrentTrack(null);
+    setMoodAnalysis(null);
+    setShowPrompt(true);
+    setSelectedAnalysis(null);
+    setShowResults(false);
+    setLoading(false);
+  }, [setShowPrompt, setSelectedAnalysis, setShowResults]);
+
+  // Function to process the currently playing track
+  const handleTrack = useCallback(async (track: SpotifyTrack & { is_playing: boolean }) => {
+    if (!track?.is_playing) return resetPlayback();
+    if (analyzedTracks.current.has(track.id) || track.id === selectedTrackID || isAnalyzing.current) return;
+
+    // Mark as processing
+    analyzedTracks.current.add(track.id);
+    setSelectedTrackID(track.id);
+    setCurrentTrack({ name: track.name, artists: track.artists.map(a => a.name).join(", ") });
+    setShowPrompt(false);
+    toast.info(`🎵 Now playing: ${track.name} by ${track.artists.map(a => a.name).join(", ")}`);
+
+    // Start analysis
+    setLoading(true);
+    isAnalyzing.current = true;
+
+    try {
+      const result = await analyzeMood(track.artists[0]?.name ?? "Unknown Artist", track.name);
+      if (!result) throw new Error("Provider did not return analysis!");
+
+      setMoodAnalysis(result);
+      setShowResults(true);
+
+      const profile = await getUserProfile(spotifyToken!);
+      if (profile) {
+        await axios.post(
+          "/api/database_server/save_analysis",
+          {
+            userProfile: profile,
+            track: {
+              id: track.id,
+              name: track.name,
+              artists: track.artists.map(a => a.name).join(", "),
+              preview_url: track.preview_url,
+              spotify_url: track.external_urls.spotify,
+            },
+            analysisResult: result,
+          },
+          { headers: { Authorization: `Bearer ${localStorage.getItem("appJWT")}` } }
+        );
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error((err as Error).message || "Error analyzing the song mood! Please try again.");
+      resetPlayback();
+    } finally {
+      setLoading(false);
+      isAnalyzing.current = false;
+    }
+  }, [resetPlayback, selectedTrackID, spotifyToken, setShowPrompt, setShowResults]);
+  
+  // Polling the current track
+  const { data: track, error } = useQuery<SpotifyTrack & { is_playing: boolean } | null, Error>({
+    queryKey: ["currentTrack", spotifyToken],
+    queryFn: () => getCurrentTrack(spotifyToken!),
+    refetchInterval: 25000,
+    enabled: !!spotifyToken && !showResults && isVisible,
+  }); 
+  
+  useEffect(() => {
+    if (error) {
+      console.error(error);
+      toast.error("Failed to fetch current Spotify track. Retrying...");
+      resetPlayback();
+    }
+  }, [error, resetPlayback]);
+
+  useEffect(() => {
+    if (track) {
+      handleTrack(track);
+    }
+  }, [track, handleTrack]);
+  
+  useEffect(() => {
+    const handleVisibility = () => setIsVisible(!document.hidden);
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => document.removeEventListener("visibilitychange", handleVisibility);
+  }, []);
+
 
   const handleSpotifyClick = () => {
     if (!spotifyToken) {
@@ -45,149 +127,8 @@ export default function Home() {
     }
   }
   const handleAnalyzeAnotherSong = () => {
-    resetPlayback()
-    checkPlayback()
-    pollingRef.current = setInterval(checkPlayback, 25000)
-  }
-
-  // Clear state when needed 
-  const resetPlayback = useCallback(() => {
-    analyzedTracks.current.clear();
-    if (pollingRef.current) clearInterval(pollingRef.current);
-    isAnalyzingRef.current = false;
-    // Reset Spotify states
-    setSelectedTrackID(null);
-    setCurrentTrack(null);
-    setMoodAnalysis(null);
-    setShowPrompt(true);
-
-    // Reset mood history selection
-    setSelectedAnalysis(null);
-    setShowResults(false);
-  }, [setShowPrompt, setSelectedAnalysis, setShowResults]);
-
-  // Check current Spotify Playback
-  const checkPlayback = useCallback(async () => {
-    if (!spotifyToken || isAnalyzingRef.current || showResults) return;
-
-    const track = await getCurrentTrack(spotifyToken);
-    if (!track || !track.is_playing) {
-      setSelectedTrackID(null);
-      setCurrentTrack(null);
-      setShowResults(false);
-      setMoodAnalysis(null);
-      setShowPrompt(true);
-      return;
-    }
-
-    const { id, is_playing } = track;
-    if (!is_playing || analyzedTracks.current.has(id) || id === selectedTrackID) return;
-
-    const trackData = {
-      name: track.name,
-      artists: track.artists.map(a => a.name).join(", ")
-    };
-
-    setSelectedTrackID(id);
-    setCurrentTrack(trackData);
-    setShowPrompt(false);
-    toast.info(`🎵 Now playing: ${track.name} by ${track.artists.map(a => a.name).join(", ")}`);
-
-    isAnalyzingRef.current = true;
-    setLoading(true);
-
-    try {
-      const artistName = track.artists[0]?.name ?? "Unknown Artist";
-
-      //ANALYZE MOOD
-      const result = await analyzeMood(artistName, track.name);
-
-      if (!result) {
-        toast.error("Provider did not return analysis!");
-        resetPlayback();
-        return;
-      }
-
-      setMoodAnalysis(result);
-      setShowResults(true);
-      analyzedTracks.current.add(id);
-
-      //Save to database server
-      const profile = await getUserProfile(spotifyToken)
-      if (profile && trackData) {
-        try {
-          const response = await axios.post("/api/database_server/save_analysis", {
-            userProfile: profile,
-            track: {
-              id: track.id,
-              name: track.name,
-              artists: track.artists.map((a) => a.name).join(", "),
-              preview_url: track.preview_url,
-              spotify_url: track.external_urls.spotify,
-            },
-            analysisResult: result,
-          }, {
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem("appJWT")}`
-            }
-          })
-        } catch (err : any) {
-          console.error("Error saving analysis:", err.response?.data || err.message);
-          toast.error("Failed to save analysis to database!");
-        }
-      }
-
-    } catch (err) {
-      console.error("Analysis error:", err);
-      toast.error("Error analyzing the song mood! Please try again.");
-      resetPlayback()
-
-    } finally {
-      isAnalyzingRef.current = false;
-      setLoading(false);
-    }
-  }, [spotifyToken, showResults, selectedTrackID, setShowPrompt, resetPlayback]);
-
-  
-  //Poll track
-  useEffect(() => {
-    if (!spotifyToken || showResults) return
-
-    checkPlayback()
-    pollingRef.current = setInterval(checkPlayback, 25000);
-    
-    // Tab hidden
-    const handleVisibilityChange = () => {
-      if (document.hidden && pollingRef.current) {
-        clearInterval(pollingRef.current);
-        pollingRef.current = null;
-      } else if (!document.hidden && !pollingRef.current) {
-        checkPlayback();
-        pollingRef.current = setInterval(checkPlayback, 25000);
-      }
-    };
-    document.addEventListener("visibilitychange", handleVisibilityChange);
-
-    return () => {
-      if (pollingRef.current) clearInterval(pollingRef.current);
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
-    };
-
-  }, [spotifyToken, checkPlayback])
-
-  //showPrompt if no track
-  useEffect(() => {
-    if (spotifyToken && !showPrompt && !loading && !showResults) {
-      setShowPrompt(true);
-    }
-  }, [spotifyToken, showPrompt, loading, showResults, setShowPrompt]);
-
-  // Hide prompt when a history item is selected
-  useEffect(() => {
-    if (selectedAnalysis) {
-      setShowPrompt(false);
-    }
-  }, [selectedAnalysis, setShowPrompt]);
+    resetPlayback();
+  };
 
   return (
     <div className="flex flex-col items-center p-8 w-full gap-6">
@@ -215,7 +156,7 @@ export default function Home() {
       {connecting && !selectedTrackID && !spotifyToken && <LoadingSpinner message="Connecting to Spotify"/>}
 
       {/* Play song from Spotify */}
-      {spotifyToken && showPrompt && <PlayPromptButton />}
+      {spotifyToken && !selectedTrackID && !loading && <PlayPromptButton />}
 
       {/* Mood Analysis Results */}
       {spotifyToken && (selectedAnalysis || (!loading && selectedTrackID && showResults && moodAnalysis)) && (

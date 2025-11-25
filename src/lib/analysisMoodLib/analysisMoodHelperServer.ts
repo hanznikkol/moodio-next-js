@@ -85,7 +85,6 @@ async function analyzeSongCore(
       }).slice(0, 5);
     }
 
-    console.log("Response: ", data)
     return data
   })
 
