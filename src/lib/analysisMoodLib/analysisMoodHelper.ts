@@ -5,9 +5,11 @@ const cache = new Map<string, AnalysisResult>();
 
 export async function analyzeMood(artist: string, songTitle: string): Promise<AnalysisResult> {
   const key = `${artist}:${songTitle}`;
-   if (cache.has(key)) {
+
+  if (cache.has(key)) {
     return cache.get(key)!;
   }
+  
   try {
     const res = await axios.post("/api/analyzeMood", { artist, songTitle });
     const data = res.data as AnalysisResult

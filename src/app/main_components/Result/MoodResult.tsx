@@ -26,7 +26,7 @@ export default function MoodResult({ analysis }: MoodResultProps) {
                   : "0 0 8px rgba(255,255,255,0.3)",
               }}
             className="text-3xl md:text-4xl font-bold lg:font-extrabold text-center text-neutral-700 dark:text-white">
-            {analysis.mood || "Unknown"}
+            {analysis.mood || "Unknown"}  
           </CardTitle>
       </CardHeader>
 

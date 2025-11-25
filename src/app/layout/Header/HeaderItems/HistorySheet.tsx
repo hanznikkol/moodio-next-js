@@ -2,7 +2,7 @@
 
 import { History, RefreshCw } from "lucide-react";
 import axios from "axios";
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useMemo } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { useSpotify } from "@/lib/spotifyLib/context/spotifyContext";
@@ -47,7 +47,6 @@ export default function HistorySheet({ onSelectHistory }: HistorySheetProps) {
   };
 
   const handleClickItem = async (item: MergedHistoryItem) => {
-    // If cached, use it immediately
     if (analysesCache.current[item.analyses_id]) {
       onSelectHistory(analysesCache.current[item.analyses_id]);
       return;
@@ -90,16 +89,20 @@ export default function HistorySheet({ onSelectHistory }: HistorySheetProps) {
     }
   }
 
-  const grouped = history.reduce<Record<string, MergedHistoryItem[]>>((acc, item) => {
-    const date = item.latestTime.split("T")[0];
-    if (!acc[date]) acc[date] = [];
-    acc[date].push(item);
-    return acc;
-  }, {});
+  const { grouped, sortedDates } = useMemo(() => {
+    const g = history.reduce<Record<string, MergedHistoryItem[]>>((acc, item) => {
+      const date = item.latestTime.split("T")[0];
+      if (!acc[date]) acc[date] = [];
+      acc[date].push(item);
+      return acc;
+    }, {});
 
-  const sortedDates = Object.keys(grouped).sort(
-    (a, b) => new Date(b).getTime() - new Date(a).getTime()
-  );
+    const s = Object.keys(g).sort(
+      (a, b) => new Date(b).getTime() - new Date(a).getTime()
+    );
+
+    return { grouped: g, sortedDates: s };
+  }, [history]);
 
   return (
     <Sheet open={openSheet} onOpenChange={setOpenSheet}>
