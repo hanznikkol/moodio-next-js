@@ -12,15 +12,7 @@ interface HeaderProps {
   historyTrackArtist?: string | null;
 }
 
-export default function HeroHeader({
-  selectedTrackID,
-  spotifyToken,
-  loading,
-  trackName,
-  trackArtist,
-  historyTrackName,
-  historyTrackArtist
-}: HeaderProps) {
+export default function HeroHeader({ selectedTrackID, spotifyToken, loading, trackName, trackArtist, historyTrackName, historyTrackArtist }: HeaderProps) {
 
   const displayTrack = historyTrackName
   ? { name: historyTrackName, artist: historyTrackArtist }
@@ -38,7 +30,7 @@ export default function HeroHeader({
       </div>  
 
       <div className="text-center flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-sm sm:text-base md:text-lg justify-center">
-          {isAnalyzing && (
+        {isAnalyzing && (
           <div className="flex gap-4 justify-center items-center">
             <Music className="w-5 h-5 text-green-400" />
             <p className="text-sm md:text-base text-black dark:text-white">
@@ -49,7 +41,7 @@ export default function HeroHeader({
         )}
 
         {!isAnalyzing && displayTrack && (
-          <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 justify-center">
+          <div className="flex flex-col items-center gap-2 sm:gap-4 justify-center">
             <div className="flex items-center gap-2 flex-wrap justify-center">
               {historyTrackName && <Sparkles className="w-5 h-5 text-yellow-400" />}
               {!historyTrackName && <Music className="w-5 h-5 text-green-400" />}

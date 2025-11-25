@@ -10,6 +10,7 @@ export async function POST(req: Request) {
             refresh_token: refreshToken,
             redirect_uri: process.env.SPOTIFY_REDIRECT_URI! ?? ""
         });
+
         const response = await axios.post("https://accounts.spotify.com/api/token", body.toString(), {
             headers: {
                 "Content-Type": "application/x-www-form-urlencoded",
@@ -24,7 +25,7 @@ export async function POST(req: Request) {
         if (!data.access_token) return new Response("Failed to refresh token", { status: 500 });
 
         return new Response(JSON.stringify(data), { status: 200 });
-
+        
     } catch (error) {
         console.error("Spotify token refresh failed:", error);
         return new Response("Failed to refresh token", { status: 500 });

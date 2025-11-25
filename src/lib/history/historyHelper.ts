@@ -1,8 +1,6 @@
 import { MergedHistoryItem, HistoryItem } from "./historyTypes";
 
-export const mergeHistoryBySong = (
-  history: (HistoryItem | MergedHistoryItem)[]
-): MergedHistoryItem[] => {
+export const mergeHistoryBySong = ( history: (HistoryItem | MergedHistoryItem)[]): MergedHistoryItem[] => {
   const map = new Map<string, MergedHistoryItem>();
 
   for (const item of history) {

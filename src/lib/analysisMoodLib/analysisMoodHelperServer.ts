@@ -32,12 +32,9 @@ async function searchSpotifyTrack(name: string, artist: string, token: string): 
   return null;
 }
 
-
 //Core analyze
-async function analyzeSongCore(
-  artist: string,
-  songTitle: string,
-): Promise<Omit<AnalysisResult, "lyrics">> {
+async function analyzeSongCore(artist: string, songTitle: string): Promise<Omit<AnalysisResult, "lyrics">> {
+  
   const prompt = `
     Analyze the song "${songTitle}" by "${artist}".
     Return JSON following this schema:

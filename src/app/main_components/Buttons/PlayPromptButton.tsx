@@ -9,10 +9,7 @@ export default function PlayPromptButton() {
         <p className="text-md lg:text-lg mb-2 font-bold bg-clip-text text-transparent bg-gradient-to-r from-pink-400 to-purple-500 select-none">
             Please play any song on Spotify to track mood
         </p>
-        <SpotifyButton
-            onClick={openSpotify}
-            label="Open Spotify & Play Music"
-        />    
+        <SpotifyButton onClick={openSpotify} label="Open Spotify & Play Music" />    
     </div>
   )
 }

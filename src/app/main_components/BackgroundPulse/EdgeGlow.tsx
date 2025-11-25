@@ -9,8 +9,8 @@ const colors = [
   "rgba(34,197,94,1)",   // green
   "rgba(168,85,247,1)",  // purple
   "rgba(250,204,21,1)",  // yellow
-  "rgba(0,0,0,1)",        // fade to black
-  "rgba(239,68,68,1)",   // back to red (loop smoothly)
+  "rgba(0,0,0,1)",       // fade to black
+  "rgba(239,68,68,1)",   // back to red
 ];
 
 export default function EdgeGlow(): JSX.Element {

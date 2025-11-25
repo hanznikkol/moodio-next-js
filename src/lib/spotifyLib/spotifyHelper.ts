@@ -11,7 +11,7 @@ export const getUserProfile = async (accessToken: string) => {
 
     if (res.status !== 200 || !res.data) return null;
 
-    return res.data; // return full user profile data
+    return res.data;
 
   } catch (err) {
     console.error("Error fetching user profile:", err);
@@ -27,11 +27,7 @@ export const getCurrentTrack = async (accessToken: string): Promise<SpotifyTrack
       headers: { Authorization: `Bearer ${accessToken}` }
     });
 
-    if (
-      res.status === 204 || 
-      !res.data?.item || 
-      res.data.is_playing === false
-    ) {
+    if (res.status === 204 || !res.data?.item || res.data.is_playing === false) {
       return null;
     }
     const data = res.data;
@@ -54,11 +50,7 @@ export const getCurrentTrack = async (accessToken: string): Promise<SpotifyTrack
 
 
 //REFRESH TOKEN
-export async function refreshAccessToken(
-  refreshToken: string | null,
-  setSpotifyToken: (token: string | null) => void,
-  clearSpotifyToken: () => void
-): Promise<string | null> {
+export async function refreshAccessToken( refreshToken: string | null, setSpotifyToken: (token: string | null) => void, clearSpotifyToken: () => void ): Promise<string | null> {
   if (!refreshToken) {
     clearSpotifyToken();
     return null;

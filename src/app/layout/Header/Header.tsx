@@ -15,24 +15,13 @@ export default function Header() {
 
   return (
     <header className="fixed w-full top-0 right-0 flex items-center justify-between p-6 z-20">
+      {/* Left */}
       <a href="/" className="flex items-center">
         <MoodioSoloLogo className="h-8 w-auto md:h-10 xl:h-12" />
       </a>
-
+      {/* Right */}
       <div className='flex items-center gap-4'>
-        <a
-          target="_blank"
-          rel="noopener noreferrer"
-          href="https://github.com/hanznikkol/moodio-next-js"
-          className="hover:scale-110 duration-100 hover:cursor-pointer"
-        >
-          <FaGithub size={24} className="text-black dark:text-white hover:text-orange-400"/>
-        </a>
-
-        {profile && <ProfileMenu />}
-
-        <ThemeToggleButton />
-
+        {/* History */}
         {profile && (
           <HistorySheet
             onSelectHistory={(analysis) => {
@@ -47,6 +36,18 @@ export default function Header() {
             }}
         />
         )}
+        
+        {/* Theme */}
+        <ThemeToggleButton />
+
+        {/* Profile */}
+        {profile && <ProfileMenu />}
+
+        {/* Github */}
+        <a target="_blank" rel="noopener noreferrer" href="https://github.com/hanznikkol/moodio-next-js" className="hover:scale-110 duration-100 hover:cursor-pointer">
+          <FaGithub size={24} className="text-black dark:text-white hover:text-orange-400 dark:hover:text-orange-400"/>
+        </a>
+
       </div>
     </header>
   );
