@@ -9,7 +9,7 @@ interface LoadingSpinnerProps {
 }
 
 export default function LoadingSpinner({ message, color = "border-pink-500", size = 'medium' } : LoadingSpinnerProps) {
-  let dimension = "w-8 h-8 lg:w-12 lg:h-12 border-4"; // default medium
+  let dimension = "w-8 h-8 lg:w-12 lg:h-12 border-4";
 
   if (size === 'small') dimension = "w-4 h-4 border-2";
   if (size === 'large') dimension = "w-12 h-12 border-4 lg:w-16 lg:h-16";

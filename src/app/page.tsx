@@ -14,9 +14,8 @@ import { useMood } from "@/lib/history/context/moodHistoryContext";
 import axios from "axios";
 
 export default function Home() {
-  const {spotifyToken, connecting, showPrompt,setConnecting, setShowPrompt } = useSpotify();
-
-  const { selectedAnalysis, setSelectedAnalysis, showResults, setShowResults } = useMood();
+  const {spotifyToken, connecting, showPrompt, setConnecting, setShowPrompt } = useSpotify();
+  const {selectedAnalysis, setSelectedAnalysis, showResults, setShowResults } = useMood();
 
   const [selectedTrackID, setSelectedTrackID] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);

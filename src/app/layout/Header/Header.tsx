@@ -21,6 +21,7 @@ export default function Header() {
       </a>
       {/* Right */}
       <div className='flex items-center gap-4'>
+
         {/* History */}
         {profile && (
           <HistorySheet
@@ -34,7 +35,7 @@ export default function Header() {
                 setSelectedAnalysis(analysis);
                 setShowResults(true);
             }}
-        />
+          />
         )}
         
         {/* Theme */}
