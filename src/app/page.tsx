@@ -15,7 +15,7 @@ import axios from "axios";
 import { supabase } from "@/lib/supabase/supabaseClient";
 
 export default function Home() {
-  const {spotifyToken, connecting, showPrompt, setConnecting, setShowPrompt } = useSpotify();
+  const {spotifyToken, connecting, setConnecting, showPrompt , setShowPrompt, appJWT } = useSpotify();
   const {selectedAnalysis, setSelectedAnalysis, showResults, setShowResults } = useMood();
 
   const [selectedTrackID, setSelectedTrackID] = useState<string | null>(null);
@@ -41,7 +41,6 @@ export default function Home() {
       console.error(error)
       return
     }
-
     setConnecting(true)
   } 
 
@@ -131,7 +130,7 @@ export default function Home() {
             analysisResult: result,
           }, {
             headers: {
-              Authorization: `Bearer ${localStorage.getItem("appJWT")}`
+              Authorization: `Bearer ${appJWT}`
             }
           })
         } catch (err : any) {

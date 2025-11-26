@@ -17,7 +17,6 @@ export const SpotifyProvider = ({children}: {children: React.ReactNode}) => {
   const [profile, setProfile] = useState<SpotifyUserProfile | null>(null);
   const [connecting, setConnecting] = useState(false);
   const [showPrompt, setShowPrompt] = useState(false);
-  const refreshIntervalRef = useRef<NodeJS.Timeout | null>(null)
 
   // Reset Spotify states
   const resetAll = useCallback(() => {
@@ -26,15 +25,6 @@ export const SpotifyProvider = ({children}: {children: React.ReactNode}) => {
     setProfile(null);
     setConnecting(false);
     setShowPrompt(false);
-
-    if(refreshIntervalRef.current) {
-      clearInterval(refreshIntervalRef.current)
-      refreshIntervalRef.current = null
-    }
-
-    localStorage.removeItem("spotifyToken");
-    localStorage.removeItem("spotifyRefreshToken");
-    localStorage.removeItem("appJWT")
   }, [])
 
   // Decode appJWT to get userId
@@ -55,54 +45,23 @@ export const SpotifyProvider = ({children}: {children: React.ReactNode}) => {
 
   // Fetch profile when spotifyToken changes
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const tokenFromUrl = params.get("access_token");
-    const refreshFromUrl = params.get("refresh_token");
-    const app_jwt_fromUrl = params.get("app_jwt");
-    const error = params.get("error");
-
-    const handleUrlLogin = () => {
-      if (error) {
-        resetAll();
-        toast.error("Spotify login failed.");
-        window.history.replaceState({}, document.title, "/");
-        return true;
-      }
-
-      if(tokenFromUrl) {
-        setSpotifyToken(tokenFromUrl);
-        if (refreshFromUrl) setRefreshToken(refreshFromUrl);
-        if (app_jwt_fromUrl) setAppJWT(app_jwt_fromUrl);
-
-        localStorage.setItem("spotifyToken", tokenFromUrl);
-        if (refreshFromUrl) localStorage.setItem("spotifyRefreshToken", refreshFromUrl);
-        if (app_jwt_fromUrl) localStorage.setItem("appJWT", app_jwt_fromUrl);
-
-        toast.success("Spotify connected successfully!");
-        window.history.replaceState({}, document.title, "/");
-        return true;
-      }
-      return false
-    }
-
-    const isUrlHandled = handleUrlLogin()
-    if (isUrlHandled) return
-
-    // Restore session from Supabase
-    const fetchSession = async () => {
+    const restoreSession = async () => {
       const { data: { session }, error } = await supabase.auth.getSession();
       if (error) {
-        console.error("Error fetching Supabase session:", error);
+        console.error("Supabase session error:", error);
         return;
       }
+
       if (session?.provider_token) {
         setSpotifyToken(session.provider_token);
-        setConnecting(false);
-        toast.success("Spotify session restored!");
+        toast.success("Spotify connected sucessfully");
       }
-    }
 
-    fetchSession()
+      const app_jwt = session?.user?.app_metadata?.app_jwt;
+      if (app_jwt) setAppJWT(app_jwt);
+    };
+
+    restoreSession()
 
     // Listen for auth changes
     const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
@@ -125,25 +84,6 @@ export const SpotifyProvider = ({children}: {children: React.ReactNode}) => {
       if (profileData) setProfile(profileData)
     })
   }, [spotifyToken]);
-
-  //Refresh token auto every 50 mins
-  useEffect(() => {
-    if (!refreshToken) return
-
-    const doRefresh = async () => {
-      const newToken = await refreshAccessToken(refreshToken, setSpotifyToken, resetAll)
-      if (newToken) console.log("Spotify token auto refreshed")
-      else toast.error("Spotify session expired. Please reconnect.");
-    }
-
-    doRefresh()
-
-    refreshIntervalRef.current = setInterval(doRefresh, 50 * 60 * 1000)
-
-    return () => {
-       if (refreshIntervalRef.current) clearInterval(refreshIntervalRef.current);
-    }
-  }, [refreshToken, resetAll])
 
   return createElement(
       SpotifyContext.Provider,
