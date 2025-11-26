@@ -4,6 +4,7 @@ import { SpotifyUserProfile } from "../spotifyTypes";
 import { getUserProfile, refreshAccessToken } from "../spotifyHelper";
 import { jwtDecode } from 'jwt-decode'
 import { toast } from "sonner";
+import { supabase } from "@/lib/supabase/supabaseClient";
 
 interface SpotifyContextType {
   spotifyToken: string | null;
@@ -49,13 +50,15 @@ export const SpotifyProvider = ({children}: {children: React.ReactNode}) => {
       clearInterval(refreshIntervalRef.current)
       refreshIntervalRef.current = null
     }
+
     localStorage.removeItem("spotifyToken");
     localStorage.removeItem("spotifyRefreshToken");
     localStorage.removeItem("appJWT")
-    }, [])
+  }, [])
 
+  // Decode appJWT to get userId
   useEffect(() => {
-  if (!appJWT) {
+    if (!appJWT) {
       setUserId(null);
       return;
     }
@@ -68,6 +71,38 @@ export const SpotifyProvider = ({children}: {children: React.ReactNode}) => {
       setUserId(null);
     }
   }, [appJWT]);
+
+  //Check session on mount and listen for changes
+  useEffect(() => {
+    const fetchSession = async () => {
+      const {data: {session}, error} = await supabase.auth.getSession()
+
+      if (error) {
+        console.error("Error getting Supabase session:", error);
+        return;
+      }
+
+      if (session?.provider_token) {
+        setSpotifyToken(session.provider_token);
+        setConnecting(false);
+        toast.success("Spotify session restored!");
+      }
+    }
+
+    fetchSession()
+
+    // Listen for auth changes
+    const {data: listener} = supabase.auth.onAuthStateChange((_event, session) => {
+      if(session?.provider_token) {
+        setSpotifyToken(session.provider_token)
+        setConnecting(false)
+      } else {
+        setSpotifyToken(null)
+      }
+    })
+
+    return () => listener.subscription.unsubscribe()
+  }, [])
 
   // Fetch profile when spotifyToken changes
   useEffect(() => {

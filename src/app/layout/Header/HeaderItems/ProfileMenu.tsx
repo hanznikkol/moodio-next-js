@@ -3,16 +3,21 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger} from "@/components/ui/dropdown-menu";
 import { useSpotify } from "@/lib/spotifyLib/context/spotifyContext";
+import { supabase } from "@/lib/supabase/supabaseClient";
 
 export default function ProfileMenu() {
-  const { profile } = useSpotify();
+  const { profile, resetAll } = useSpotify();
   const userImage = profile?.images?.[0]?.url;
   const displayName = profile?.display_name || "User";
 
-  const handleLogout = () => {
-    localStorage.removeItem("spotifyToken");
-    localStorage.removeItem("spotifyRefreshToken");
-    window.location.href = "/";
+  const handleLogout = async () => {
+    try {
+      await supabase.auth.signOut()
+      resetAll()
+      window.location.href = "/";
+    } catch (err) {
+      console.error("Logout failed:", err);
+    }
   };
 
   if (!profile) return null;

@@ -12,6 +12,7 @@ import MoodResult from "./main_components/Result/MoodResult";
 import PlayPromptButton from "./main_components/Buttons/PlayPromptButton";
 import { useMood } from "@/lib/history/context/moodHistoryContext";
 import axios from "axios";
+import { supabase } from "@/lib/supabase/supabaseClient";
 
 export default function Home() {
   const {spotifyToken, connecting, showPrompt, setConnecting, setShowPrompt } = useSpotify();
@@ -26,12 +27,23 @@ export default function Home() {
   const pollingRef = useRef<NodeJS.Timeout | null>(null);
   const isAnalyzingRef = useRef(false);
 
-  const handleSpotifyClick = () => {
-    if (!spotifyToken) {
-      setConnecting(true)
-      window.location.href = "/api/spotify/login";
+  const handleSpotifyClick = async () => {
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: 'spotify',
+      options: {
+        scopes: 'user-read-private user-read-playback-state user-read-currently-playing user-top-read',
+        redirectTo: process.env.NEXT_PUBLIC_BASE_URL!
+      }
+    })
+
+    if (error) {
+      toast.error('Failed to start Spotify login!')
+      console.error(error)
+      return
     }
-  }
+
+    setConnecting(true)
+  } 
 
   const handleAnalyzeAnotherSong = () => {
     resetPlayback()
