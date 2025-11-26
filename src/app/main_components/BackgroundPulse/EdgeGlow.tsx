@@ -21,10 +21,10 @@ export default function EdgeGlow(): JSX.Element {
           key={pos}
           className={`
             absolute blur-3xl mix-blend-screen
-            ${pos === "top" ? "top-0 left-0 right-0 h-12" : ""}
-            ${pos === "bottom" ? "bottom-0 left-0 right-0 h-12" : ""}
-            ${pos === "left" ? "top-0 bottom-0 left-0 w-12" : ""}
-            ${pos === "right" ? "top-0 bottom-0 right-0 w-12" : ""}
+            ${pos === "top" ? "top-0 left-0 right-0 h-8 sm:h-10 lg:h-12" : ""}
+            ${pos === "bottom" ? "bottom-0 left-0 right-0 h-8 sm:h-10 lg:h-12" : ""}
+            ${pos === "left" ? "top-0 bottom-0 left-0 w-10 md:w-12" : ""}
+            ${pos === "right" ? "top-0 bottom-0 right-0 w-10 md:w-12" : ""}
           `}
           animate={{
             backgroundColor: colors,
