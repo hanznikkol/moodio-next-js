@@ -28,21 +28,18 @@ export const SpotifyProvider = ({children}: {children: React.ReactNode}) => {
     setShowPrompt(false);
   }, [])
 
-  // Decode appJWT to get userId
   useEffect(() => {
-    if (!appJWT) {
-      setUserId(null);
-      return;
+    const fetchUserId = async() => {
+      try {
+        const {data: {user}, error} = await supabase.auth.getUser()
+        if (user) setUserId(user.id);
+      } catch (err) {
+        console.error("Failed to get Supabase user:", err);
+      }
     }
 
-    try {
-      const decoded: AppJWTPayload = jwtDecode(appJWT);
-      setUserId(decoded.sub);
-    } catch (err) {
-      console.error("Failed to decode app JWT", err);
-      setUserId(null);
-    }
-  }, [appJWT]);
+    fetchUserId()
+  },[]) 
 
   // Fetch profile when spotifyToken changes
   useEffect(() => {
@@ -87,7 +84,7 @@ export const SpotifyProvider = ({children}: {children: React.ReactNode}) => {
         setProfile(profileData);
 
         try {
-          const { data: { user } } = await supabase.auth.getUser(); // Supabase session user
+          const { data: { user } } = await supabase.auth.getUser();
           if (user) {
             await supabase
               .from("users")
@@ -105,9 +102,6 @@ export const SpotifyProvider = ({children}: {children: React.ReactNode}) => {
     }
     
     userHandler()
-    // getUserProfile(spotifyToken).then(profileData => {
-    //   if (profileData) setProfile(profileData)
-    // })
   }, [spotifyToken]);
 
   return createElement(
