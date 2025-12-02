@@ -5,8 +5,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import Image from "next/image";
 import { Music } from "lucide-react";
-import { FaSpotify } from "react-icons/fa";
+import { FaFacebookMessenger, FaFacebookSquare, FaInstagram, FaSpotify } from "react-icons/fa";
+import { FaSquareXTwitter } from "react-icons/fa6";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import CopyClipboard from "../Icons/CopyClipboard";
 
 interface MoodResultProps {
   analysis: AnalysisResult;
@@ -126,6 +128,20 @@ export default function MoodResult({ analysis }: MoodResultProps) {
             </div>
           </div>
         )}
+
+        {/* Share with friends */}
+        <div className="w-full"> 
+          <h3 className="text-lg font-semibold mb-3 text-center">Share it with your friends</h3>
+          
+          <div className="flex justify-center gap-8 items-center text-2xl">
+            <FaFacebookSquare className="text-[#1877F2] hover:scale-110 transition-transform cursor-pointer" />
+            <FaFacebookMessenger className="text-[#0084FF] hover:scale-110 transition-transform cursor-pointer" />
+            <FaInstagram className="text-[#E1306C] hover:scale-110 transition-transform cursor-pointer" />
+            <FaSquareXTwitter className="text-black dark:text-white hover:scale-110 transition-transform cursor-pointer"/>
+            <CopyClipboard textToCopy=""/>
+          </div>
+
+        </div>
 
     </CardContent>
 

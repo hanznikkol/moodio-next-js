@@ -50,6 +50,7 @@ async function analyzeSongCore(artist: string, songTitle: string): Promise<Omit<
     Rules:
     - Return ONLY valid JSON, no extra text.
     - Mood must be **2 descriptive words**
+    - Also include meaning and history of the song and the reason of the mood in "explanation" in a short paragraph.
     - Avoid repeating common moods like "nostalgic" or "melancholic" in every result.
     - Consider **similar genre, tempo, mood, lyrical theme, or instrumentation**.
     - Return exactly 5 (max) tracks that are **musically or emotionally related** to this song.

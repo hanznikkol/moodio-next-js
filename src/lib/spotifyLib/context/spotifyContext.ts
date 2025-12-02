@@ -14,6 +14,7 @@ export const SpotifyProvider = ({children}: {children: React.ReactNode}) => {
   const [refreshToken, setRefreshToken] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [appJWT, setAppJWT] = useState<string | null>(null);
+  const [supabaseJWT, setSupabaseJWT] = useState<string | null>(null);
   const [profile, setProfile] = useState<SpotifyUserProfile | null>(null);
   const [connecting, setConnecting] = useState(false);
   const [showPrompt, setShowPrompt] = useState(false);
@@ -57,8 +58,7 @@ export const SpotifyProvider = ({children}: {children: React.ReactNode}) => {
         toast.success("Spotify connected sucessfully");
       }
 
-      const app_jwt = session?.user?.app_metadata?.app_jwt;
-      if (app_jwt) setAppJWT(app_jwt);
+      if (session?.access_token) setSupabaseJWT(session.access_token);      
     };
 
     restoreSession()
@@ -67,6 +67,7 @@ export const SpotifyProvider = ({children}: {children: React.ReactNode}) => {
     const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session?.provider_token) {
         setSpotifyToken(session.provider_token);
+        setSupabaseJWT(session.access_token || null);
         setConnecting(false);
       } else {
         resetAll();
@@ -79,15 +80,39 @@ export const SpotifyProvider = ({children}: {children: React.ReactNode}) => {
   // Fetch profile when spotifyToken changes
   useEffect(() => {
     if (!spotifyToken) return;
+
+    const userHandler = async () => {
+      const profileData = await getUserProfile(spotifyToken);
+      if (profileData) {
+        setProfile(profileData);
+
+        try {
+          const { data: { user } } = await supabase.auth.getUser(); // Supabase session user
+          if (user) {
+            await supabase
+              .from("users")
+              .upsert({
+                user_id: user.id, // Supabase user ID
+                spotify_id: profileData.id,
+                display_name: profileData.display_name,
+                avatar_url: profileData.images?.[0]?.url || null,
+              }, { onConflict: "user_id" });
+          }
+        }catch(err) {
+          console.error("Failed to upsert user:", err);
+        }
+      }
+    }
     
-    getUserProfile(spotifyToken).then(profileData => {
-      if (profileData) setProfile(profileData)
-    })
+    userHandler()
+    // getUserProfile(spotifyToken).then(profileData => {
+    //   if (profileData) setProfile(profileData)
+    // })
   }, [spotifyToken]);
 
   return createElement(
       SpotifyContext.Provider,
-      { value: { spotifyToken, refreshToken, userId, appJWT, profile, connecting, showPrompt, setSpotifyToken, setRefreshToken, setConnecting, setShowPrompt, resetAll } },
+      { value: { spotifyToken, refreshToken, userId, appJWT, supabaseJWT, profile, connecting, showPrompt, setSpotifyToken, setRefreshToken, setConnecting, setShowPrompt, resetAll } },
       children
   );
 }
