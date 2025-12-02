@@ -15,7 +15,7 @@ import axios from "axios";
 import { supabase } from "@/lib/supabase/supabaseClient";
 
 export default function Home() {
-  const {spotifyToken, connecting, setConnecting, showPrompt , setShowPrompt, appJWT } = useSpotify();
+  const {spotifyToken, connecting, setConnecting, showPrompt , setShowPrompt, supabaseJWT } = useSpotify();
   const {selectedAnalysis, setSelectedAnalysis, showResults, setShowResults } = useMood();
 
   const [selectedTrackID, setSelectedTrackID] = useState<string | null>(null);
@@ -123,14 +123,14 @@ export default function Home() {
             track: {
               id: track.id,
               name: track.name,
-              artists: track.artists.map((a) => a.name).join(", "),
+              artists: track.artists.map((a) => a.name),
               preview_url: track.preview_url,
               spotify_url: track.external_urls.spotify,
             },
             analysisResult: result,
           }, {
             headers: {
-              Authorization: `Bearer ${appJWT}`
+              Authorization: `Bearer ${supabaseJWT}`
             }
           })
         } catch (err : any) {

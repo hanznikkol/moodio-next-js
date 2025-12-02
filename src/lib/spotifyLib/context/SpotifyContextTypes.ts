@@ -5,6 +5,7 @@ export interface SpotifyContextType {
   refreshToken: string | null;
   userId: string | null;
   appJWT: string | null; 
+  supabaseJWT: string | null
   profile: SpotifyUserProfile | null;
   connecting: boolean;
   showPrompt: boolean;

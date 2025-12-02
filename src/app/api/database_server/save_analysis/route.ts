@@ -1,33 +1,30 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabaseAdmin } from "@/lib/supabase/supabaseServer";
+import { createClient } from "@supabase/supabase-js";
 
 export async function POST(req: NextRequest) {
   try {
-
     const jwt = req.headers.get("Authorization")?.replace("Bearer ", "");
     if (!jwt) throw new Error("Missing JWT");
 
-    const { userProfile, track, analysisResult } = await req.json();
+    const supabaseClientJWT = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      { global: { headers: { Authorization: `Bearer ${jwt}` } } }
+    );
 
-    // Upsert user
-    const { data: user, error: userError } = await supabaseAdmin
-      .from("users")
-      .upsert({
-        spotify_id: userProfile.id,
-        display_name: userProfile.display_name,
-        avatar_url: userProfile.images?.[0]?.url || null,
-      }, {onConflict: "spotify_id"})
-      .select("user_id")
-      .single();
-    if (userError) throw userError;
+    const { data: { user }, error } = await supabaseClientJWT.auth.getUser();
+    if (error || !user) throw new Error("No authenticated user found");
+
+    const { userId, track, analysisResult } = await req.json();
 
     // Upsert song
-    const { data: song, error: songError } = await supabaseAdmin
+    const simpleArtist = Array.isArray(track.artists) ? track.artists.join(", ") : track.artists;
+    const { data: song, error: songError } = await supabaseClientJWT
       .from("songs")
       .upsert({
         spotify_id: track.id,
         name: track.name,
-        artist: track.artists,
+        artist: simpleArtist,
         preview_url: track.preview_url,
         spotify_url: track.spotify_url,
       }, {onConflict: "spotify_id"})
@@ -36,10 +33,10 @@ export async function POST(req: NextRequest) {
     if (songError) throw songError;
 
     // Save analysis (allows duplicate for history cases)
-    const { data: analysis, error: analysisError } = await supabaseAdmin
+    const { data: analysis, error: analysisError } = await supabaseClientJWT
       .from("analyses")
       .insert({
-        user_id: user.user_id,
+        user_id: user.id,
         song_id: song.song_id,
         mood: analysisResult.mood,
         explanation: analysisResult.explanation,
@@ -55,13 +52,13 @@ export async function POST(req: NextRequest) {
       const recs = analysisResult.recommendedTracks.map((r: any) => ({
         analyses_id: analysis.analyses_id,
         name: r.name,
-        artists: r.artist,
+        artists: Array.isArray(r.artist) ? r.artist.join(", ") : r.artist,
         note: r.note,
         image: r.image,
         uri: r.uri,
       }));
 
-      const { error: recError } = await supabaseAdmin
+      const { error: recError } = await supabaseClientJWT
         .from("recommended_tracks")
         .insert(recs);
       if (recError) throw recError;
