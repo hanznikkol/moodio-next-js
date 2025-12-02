@@ -6,16 +6,18 @@ import React, { useEffect, useState, useRef, useMemo } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { useSpotify } from "@/lib/spotifyLib/context/spotifyContext";
-import { MergedHistoryItem } from "@/lib/history/historyTypes";
+import { HistoryItem, MergedHistoryItem } from "@/lib/history/historyTypes";
 import LoadingSpinner from "@/app/main_components/LoadingSpinner";
 import { AnalysisResult } from "@/lib/analysisMoodLib/analysisResult";
 import { mergeHistoryBySong } from "@/lib/history/historyHelper";
+import { supabase } from "@/lib/supabase/supabaseClient";
 
 interface HistorySheetProps {
+  supabaseUserId: string
   onSelectHistory: (analysis: AnalysisResult) => void
 }
 
-export default function HistorySheet({ onSelectHistory }: HistorySheetProps) {
+export default function HistorySheet({ supabaseUserId, onSelectHistory }: HistorySheetProps) {
   const { profile } = useSpotify();
   const [history, setHistory] = useState<MergedHistoryItem[]>([]);
   const [loading, setLoading] = useState(false);
@@ -25,9 +27,8 @@ export default function HistorySheet({ onSelectHistory }: HistorySheetProps) {
   // Cache analyses to avoid repeated API calls
   const analysesCache = useRef<Record<string, AnalysisResult>>({});
 
-  if (!profile) return null;
-
   const fetchHistory = async () => {
+    if (!profile) return
     setLoading(true);
     try {
       const res = await axios.get("/api/database_server/get_history", {
@@ -103,6 +104,84 @@ export default function HistorySheet({ onSelectHistory }: HistorySheetProps) {
 
     return { grouped: g, sortedDates: s };
   }, [history]);
+
+   // Realtime History
+  useEffect(() => {
+    if (!supabaseUserId) return;
+    console.log(supabaseUserId)
+    const channel = supabase
+      .channel("realtime-analyses")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "analyses",
+          filter: `user_id=eq.${supabaseUserId}`,
+        },
+        async (payload) => {
+          console.log("Realtime payload:", payload);
+
+          // INSERT
+          if (payload.eventType === "INSERT") {
+            const { data: song } = await supabase
+              .from("songs")
+              .select("name, artist")
+              .eq("song_id", payload.new.song_id)
+              .single();
+
+            if (!song) return;
+
+            const newItem: HistoryItem = {
+              analyses_id: payload.new.analyses_id,
+              created_at: payload.new.created_at,
+              mood: payload.new.mood,
+              track_name: song.name,
+              songs: { name: song.name, artist: song.artist },
+            };
+
+            setHistory((prev) =>
+              mergeHistoryBySong([newItem, ...prev ])
+            );
+          }
+
+          // UPDATE
+          if (payload.eventType === "UPDATE") {
+            setHistory((prev) => {
+              const updated = prev.map((item) =>
+                item.analyses_id === payload.new.analyses_id
+                  ? {
+                      ...item,
+                      mood: payload.new.mood,
+                      created_at: payload.new.created_at,
+                      latestTime: payload.new.created_at,
+                    }
+                  : item
+              );
+
+              return mergeHistoryBySong(updated);
+            });
+          }
+
+          // DELETE
+          if (payload.eventType === "DELETE") {
+            setHistory((prev) =>
+              mergeHistoryBySong(
+                prev.filter(
+                  (item) =>
+                    item.analyses_id !== payload.old.analyses_id
+                )
+              )
+            );
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [supabaseUserId]);
 
   return (
     <Sheet open={openSheet} onOpenChange={setOpenSheet}>

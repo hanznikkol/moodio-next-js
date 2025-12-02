@@ -10,9 +10,8 @@ import HistorySheet from './HeaderItems/HistorySheet';
 import { useMood } from '@/lib/history/context/moodHistoryContext';
 
 export default function Header() {
-  const { profile } = useSpotify();
+  const { profile, userId } = useSpotify();
   const { setSelectedAnalysis, setShowResults, setSelectedTrackID, setCurrentTrack, setMoodAnalysis, setShowPrompt } = useMood();
-
   return (
     <header className="fixed w-full top-0 right-0 flex items-center justify-between p-6 z-20">
       {/* Left */}
@@ -22,22 +21,22 @@ export default function Header() {
       {/* Right */}
       <div className='flex items-center gap-4'>
 
+      
         {/* History */}
-        {profile && (
+        {profile && userId && (
           <HistorySheet
+            supabaseUserId={userId}
             onSelectHistory={(analysis) => {
-                // Reset Spotify playback state
-                setSelectedTrackID(null);
-                setCurrentTrack(null);
-                setMoodAnalysis(null);
-                setShowPrompt(false);
-                // Show the selected history
-                setSelectedAnalysis(analysis);
-                setShowResults(true);
+              setSelectedTrackID(null);
+              setCurrentTrack(null);
+              setMoodAnalysis(null);
+              setShowPrompt(false);
+              setSelectedAnalysis(analysis);
+              setShowResults(true);
             }}
           />
         )}
-        
+                
         {/* Theme */}
         <ThemeToggleButton />
 

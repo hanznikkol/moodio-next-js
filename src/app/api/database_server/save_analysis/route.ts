@@ -15,7 +15,7 @@ export async function POST(req: NextRequest) {
     const { data: { user }, error } = await supabaseClientJWT.auth.getUser();
     if (error || !user) throw new Error("No authenticated user found");
 
-    const { userId, track, analysisResult } = await req.json();
+    const { track, analysisResult } = await req.json();
 
     // Upsert song
     const simpleArtist = Array.isArray(track.artists) ? track.artists.join(", ") : track.artists;
