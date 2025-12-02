@@ -46,17 +46,13 @@ Open http://localhost:3000 in your browser. The page auto-updates as you edit ap
 
 ## Usage
 
-1. Log in with your Spotify account.  
-2. Browse your music library.  
-3. Select a track to see its mood analyzed by Gemini AI.  
-4. Review your listening history with previously analyzed tracks.  
+1. Connect your Spotify Account  
+2. Play Music in Spotify
+3. Let Gemini AI Analyze Your Mood
+4. View Mood Insights & Track Recommendations
+5. View Your Analysis History
 
 > **Note:** Spotify authentication is required to fetch your tracks.
-
-## Planned Features
-
-- **Real-time analysis updates** (coming soon)  
-- **Playlist recommendations based on mood**  
 
 ## Deployment
 
