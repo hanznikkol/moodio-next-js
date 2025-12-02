@@ -11,6 +11,7 @@ import LoadingSpinner from "@/app/main_components/LoadingSpinner";
 import { AnalysisResult } from "@/lib/analysisMoodLib/analysisResult";
 import { mergeHistoryBySong } from "@/lib/history/historyHelper";
 import { supabase } from "@/lib/supabase/supabaseClient";
+import { Input } from "@/components/ui/input";
 
 interface HistorySheetProps {
   supabaseUserId: string
@@ -19,6 +20,7 @@ interface HistorySheetProps {
 
 export default function HistorySheet({ supabaseUserId, onSelectHistory }: HistorySheetProps) {
   const { profile } = useSpotify();
+  const [searchQuery, setSearchQuery] = useState("")
   const [history, setHistory] = useState<MergedHistoryItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [openSheet, setOpenSheet] = useState(false);
@@ -90,8 +92,27 @@ export default function HistorySheet({ supabaseUserId, onSelectHistory }: Histor
     }
   }
 
+  const filteredHistory = useMemo(() => {
+    if (!searchQuery) return history
+    const query = searchQuery.toLowerCase()
+
+    return history.filter(item => {
+      const songName = item.songs.name.toLowerCase() ?? ""
+      const artist = item.songs?.artist?.toLowerCase() ?? "";
+      const mood = item.mood?.toLowerCase() ?? "";
+      const date = new Date(item.latestTime).toLocaleDateString().toLowerCase();
+
+      return (
+        songName.includes(query) ||
+        artist.includes(query) ||
+        mood.includes(query) ||
+        date.includes(query)
+      );
+    })
+  }, [history, searchQuery])
+
   const { grouped, sortedDates } = useMemo(() => {
-    const g = history.reduce<Record<string, MergedHistoryItem[]>>((acc, item) => {
+    const g = filteredHistory.reduce<Record<string, MergedHistoryItem[]>>((acc, item) => {
       const date = item.latestTime.split("T")[0];
       if (!acc[date]) acc[date] = [];
       acc[date].push(item);
@@ -103,7 +124,7 @@ export default function HistorySheet({ supabaseUserId, onSelectHistory }: Histor
     );
 
     return { grouped: g, sortedDates: s };
-  }, [history]);
+  }, [filteredHistory]);
 
    // Realtime History
   useEffect(() => {
@@ -193,16 +214,21 @@ export default function HistorySheet({ supabaseUserId, onSelectHistory }: Histor
       <SheetContent side="right" className="w-[300px] lg:w-[400px]">
         <SheetHeader className="flex flex-col gap-2">
           <SheetTitle>Song History</SheetTitle>
-          <button
-            onClick={fetchHistory}
-            className="flex items-center gap-1 text-sm text-cyan-500 hover:text-cyan-400"
-          >
-            <RefreshCw className="w-4 h-4" />
-            Refresh
-          </button>
+
+          <div className="flex items-center gap-4">
+            {/* Search */}
+            <Input type="text" placeholder="Search..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}/>
+            {/* Refresh */}
+            <button
+              onClick={fetchHistory}
+              className="flex items-center gap-1 text-sm text-cyan-500 hover:text-cyan-400"
+              >
+                <RefreshCw className="w-4 h-4" />
+            </button>
+          </div>
         </SheetHeader>
 
-        <ScrollArea className="h-[90vh] p-2">
+        <ScrollArea className="flex-1 overflow-y-auto p-2">
           {loading ? (
             <LoadingSpinner color="border-cyan-400" />
           ) : history.length === 0 ? (
@@ -228,7 +254,7 @@ export default function HistorySheet({ supabaseUserId, onSelectHistory }: Histor
                             <p className="text-sm text-gray-400">{item.songs?.artist}</p>
                             <p className="text-xs italic">{item.mood}</p>
                             {item.count > 1 && (
-                              <p className="text-xs text-cyan-400">analyzed {item.count} times</p>
+                              <p className="text-xs text-cyan-400">analyzed {item.count}x consecutively</p>
                             )}
                           </div>
                           {loadingItemId === item.analyses_id && <LoadingSpinner color="border-cyan-400" size="small" />}
