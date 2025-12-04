@@ -23,18 +23,10 @@ export async function GET(req: NextRequest) {
         .select(`
             analyses_id,
             mood,
-            explanation,
-            color_palette,
             created_at,
             songs (
                 name,
                 artist
-            ),
-            recommended_tracks (
-                name,
-                artists,
-                uri,
-                image
             ),
             users (
             spotify_id
