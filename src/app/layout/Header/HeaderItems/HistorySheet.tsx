@@ -1,17 +1,16 @@
 'use client'
 
 import { History, RefreshCw } from "lucide-react";
-import axios from "axios";
 import React, { useEffect, useState, useRef, useMemo } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { useSpotify } from "@/lib/spotifyLib/context/spotifyContext";
 import { HistoryItem, MergedHistoryItem } from "@/lib/history/historyTypes";
 import LoadingSpinner from "@/app/main_components/LoadingSpinner";
 import { AnalysisResult } from "@/lib/analysisMoodLib/analysisResult";
-import { mergeHistoryBySong } from "@/lib/history/historyHelper";
-import { supabase } from "@/lib/supabase/supabaseClient";
+import { fetchAnalysisById, fetchHistoryBySpotifyId, mergeHistoryBySong, subscribeToRealtimeHistory } from "@/lib/history/historyHelper";
 import { Input } from "@/components/ui/input";
+import { toast } from "sonner";
 
 interface HistorySheetProps {
   supabaseUserId: string
@@ -19,34 +18,69 @@ interface HistorySheetProps {
 }
 
 export default function HistorySheet({ supabaseUserId, onSelectHistory }: HistorySheetProps) {
+  const historyCache = useRef<MergedHistoryItem[] | null>(null);
+  const analysesCache = useRef<Record<string, AnalysisResult>>({});
+  const realtimeUnsubscribe = useRef<(() => void) | null>(null);
+
   const { profile } = useSpotify();
   const [searchQuery, setSearchQuery] = useState("")
-  const [history, setHistory] = useState<MergedHistoryItem[]>([]);
+  const [history, setHistory] = useState<MergedHistoryItem[]>(historyCache.current ?? []);
   const [loading, setLoading] = useState(false);
   const [openSheet, setOpenSheet] = useState(false);
   const [loadingItemId, setLoadingItemId] = useState<string | null>(null);
 
-  // Cache analyses to avoid repeated API calls
-  const analysesCache = useRef<Record<string, AnalysisResult>>({});
-
-  const fetchHistory = async () => {
-    if (!profile) return
-    setLoading(true);
-    try {
-      const res = await axios.get("/api/database_server/get_history", {
-        params: { spotifyId: profile.id },
-      });
-      setHistory(mergeHistoryBySong(res.data));
-    } catch (err) {
-      console.error("Error fetching history", err);
-    } finally {
-      setLoading(false);
-    }
+  const setHistoryAndCache = (updater: React.SetStateAction<MergedHistoryItem[]>) => {
+    setHistory(prev => {
+      const newState = typeof updater === "function" ? (updater as Function)(prev) : updater;
+      historyCache.current = newState;
+      return newState;
+    });
   };
+
+  const refreshButtonHandler = async () => {
+    setLoading(true)
+    try {
+      const fetchedHistory = await fetchHistoryBySpotifyId(profile?.id!)
+      setHistoryAndCache(fetchedHistory)
+    } catch(err) {
+      toast.error("Failed refresh")
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const handleOpenSheet = async () => {
     setOpenSheet(true);
-    if (history.length === 0) await fetchHistory();
+
+    if (!profile) return;
+
+    // Use cache immediately
+    if (historyCache.current) {
+      setHistoryAndCache(historyCache.current);
+
+      // subscribe once
+      if (!realtimeUnsubscribe.current && supabaseUserId) {
+        realtimeUnsubscribe.current = subscribeToRealtimeHistory(supabaseUserId, setHistoryAndCache, historyCache);
+      }
+
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const fetchedHistory = await fetchHistoryBySpotifyId(profile.id);
+      setHistoryAndCache(fetchedHistory);
+      historyCache.current = fetchedHistory;
+
+      if (!realtimeUnsubscribe.current && supabaseUserId) {
+        realtimeUnsubscribe.current = subscribeToRealtimeHistory(supabaseUserId, setHistoryAndCache, historyCache);
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to load history");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleClickItem = async (item: MergedHistoryItem) => {
@@ -54,39 +88,21 @@ export default function HistorySheet({ supabaseUserId, onSelectHistory }: Histor
       onSelectHistory(analysesCache.current[item.analyses_id]);
       return;
     }
-
+ 
     try {
       setLoadingItemId(item.analyses_id);
+      const analysisFromApi = await fetchAnalysisById(item.analyses_id)
 
-      const res = await axios.get('/api/database_server/get_analyses_by_id', {
-        params: { analysesId: item.analyses_id }
-      });
-
-      const raw = res.data;
       const analysis: AnalysisResult = {
-        mood: raw.mood,
-        explanation: raw.explanation,
-        colorPalette: raw.color_palette || [],
-        lyrics: raw.lyrics ?? null,
-        spotifyTrackId: raw.spotify_track_id,
-        recommendedTracks: (raw.recommended_tracks || []).map((t: any) => ({
-          id: t.id,
-          name: t.name,
-          artist: t.artists,
-          note: t.note,
-          image: t.image,
-          uri: t.uri,
-        })),
+        ...analysisFromApi,
         trackName: item.songs?.name ?? "Unknown",
-        trackArtist: item.songs?.artist ?? "Unknown"
-      };
+        trackArtist: item.songs?.artist ?? "Unknown",
+      }
 
-      // Cache it
       analysesCache.current[item.analyses_id] = analysis;
       onSelectHistory(analysis);
-
     } catch (err) {
-      console.error("Error fetching analysis by ID:", err);
+      console.error("Error item analysis:", err);
     } finally {
       setLoadingItemId(null);
     }
@@ -111,98 +127,55 @@ export default function HistorySheet({ supabaseUserId, onSelectHistory }: Histor
     })
   }, [history, searchQuery])
 
+  //Group Items and Sorted Dates
   const { grouped, sortedDates } = useMemo(() => {
     const g = filteredHistory.reduce<Record<string, MergedHistoryItem[]>>((acc, item) => {
-      const date = item.latestTime.split("T")[0];
+      const latestTime = item.latestTime ?? item.created_at ?? new Date().toISOString();
+      const date = latestTime.split("T")[0];
       if (!acc[date]) acc[date] = [];
       acc[date].push(item);
       return acc;
     }, {});
 
-    const s = Object.keys(g).sort(
-      (a, b) => new Date(b).getTime() - new Date(a).getTime()
-    );
-
+    const s = Object.keys(g).sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
     return { grouped: g, sortedDates: s };
   }, [filteredHistory]);
 
-   // Realtime History
   useEffect(() => {
-    if (!supabaseUserId) return;
-    console.log(supabaseUserId)
-    const channel = supabase
-      .channel("realtime-analyses")
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "analyses",
-          filter: `user_id=eq.${supabaseUserId}`,
-        },
-        async (payload) => {
-          console.log("Realtime payload:", payload);
+      if (!supabaseUserId || !profile) return;
+    if (realtimeUnsubscribe.current) return
 
-          // INSERT
-          if (payload.eventType === "INSERT") {
-            const { data: song } = await supabase
-              .from("songs")
-              .select("name, artist")
-              .eq("song_id", payload.new.song_id)
-              .single();
+    const fetchAndSubscribe = async () => {
+      try{
 
-            if (!song) return;
+        const fethedHistory = await fetchHistoryBySpotifyId(profile?.id)
+        setHistoryAndCache(fethedHistory)
 
-            const newItem: HistoryItem = {
-              analyses_id: payload.new.analyses_id,
-              created_at: payload.new.created_at,
-              mood: payload.new.mood,
-              track_name: song.name,
-              songs: { name: song.name, artist: song.artist },
-            };
-
-            setHistory((prev) =>
-              mergeHistoryBySong([newItem, ...prev ])
-            );
-          }
-
-          // UPDATE
-          if (payload.eventType === "UPDATE") {
-            setHistory((prev) => {
-              const updated = prev.map((item) =>
-                item.analyses_id === payload.new.analyses_id
-                  ? {
-                      ...item,
-                      mood: payload.new.mood,
-                      created_at: payload.new.created_at,
-                      latestTime: payload.new.created_at,
-                    }
-                  : item
-              );
-
-              return mergeHistoryBySong(updated);
-            });
-          }
-
-          // DELETE
-          if (payload.eventType === "DELETE") {
-            setHistory((prev) =>
-              mergeHistoryBySong(
-                prev.filter(
-                  (item) =>
-                    item.analyses_id !== payload.old.analyses_id
-                )
-              )
-            );
-          }
+        // Subscribe to realtime updates
+        if (!realtimeUnsubscribe.current) {
+          realtimeUnsubscribe.current = subscribeToRealtimeHistory(
+            supabaseUserId,
+            setHistoryAndCache,
+            historyCache
+          );
         }
-      )
-      .subscribe();
+      } catch (err) {
+        console.error(err);
+        toast.error("Failed to load history");
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchAndSubscribe()
 
     return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [supabaseUserId]);
+      if (realtimeUnsubscribe.current) {
+        realtimeUnsubscribe.current()
+        realtimeUnsubscribe.current = null
+      }
+    }
+  }, [supabaseUserId, profile])
 
   return (
     <Sheet open={openSheet} onOpenChange={setOpenSheet}>
@@ -214,13 +187,14 @@ export default function HistorySheet({ supabaseUserId, onSelectHistory }: Histor
       <SheetContent side="right" className="w-[300px] lg:w-[400px]">
         <SheetHeader className="flex flex-col gap-2">
           <SheetTitle>Song History</SheetTitle>
+          <SheetDescription></SheetDescription>
 
           <div className="flex items-center gap-4">
             {/* Search */}
             <Input type="text" placeholder="Search..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}/>
             {/* Refresh */}
             <button
-              onClick={fetchHistory}
+              onClick={refreshButtonHandler}
               className="flex items-center gap-1 text-sm text-cyan-500 hover:text-cyan-400"
               >
                 <RefreshCw className="w-4 h-4" />

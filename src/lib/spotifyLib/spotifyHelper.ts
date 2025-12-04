@@ -4,16 +4,13 @@ import { toast } from "sonner";
 import { supabase } from "../supabase/supabaseClient";
 
 // SAVE USER PROFILE
-export const upsertUser = async(profile: SpotifyUserProfile, access_token: string) => {
+export const upsertUser = async(profile: SpotifyUserProfile) => {
   try {
-    const supabaseClientJWT = supabase;
-
-    await supabaseClientJWT.from("users").upsert({
-      user_id: (await supabase.auth.getUser()).data.user?.id,
-      spotify_id: profile.id,
-      display_name: profile.display_name,
-      avatar_url: profile.images?.[0]?.url || null,
-    }, { onConflict: "user_id" });
+    await axios.post('/api/upsert-user', {
+        spotify_id: profile.id,
+        display_name: profile.display_name,
+        avatar_url: profile.images?.[0]?.url || null,
+    })
     
   } catch (err) {
     console.error("Failed to add user:", err);
