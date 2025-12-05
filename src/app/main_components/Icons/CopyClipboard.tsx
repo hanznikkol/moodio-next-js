@@ -9,7 +9,7 @@ function CopyClipboard({textToCopy}: CopyClipBoardProps) {
   const handleCopy = async () => {
     try {
         await navigator.clipboard.writeText(textToCopy);
-        toast.success("Link copied to clipboard!"); // optional
+        toast.success("Link copied to clipboard!");
     } catch(err) {
       toast.error("Failed to copy link.");
     }
@@ -17,7 +17,7 @@ function CopyClipboard({textToCopy}: CopyClipBoardProps) {
 
   return (
     <FaCopy
-      className="cursor-pointer transition-colors text-gray-700 dark:text-white hover:scale-110 "
+      className="cursor-pointer text-gray-700 dark:text-white hover:scale-110 "
       onClick={handleCopy}
       title="Copy link"
     />

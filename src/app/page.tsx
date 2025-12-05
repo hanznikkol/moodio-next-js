@@ -22,6 +22,7 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [moodAnalysis, setMoodAnalysis] = useState<AnalysisResult | null>(null);
   const [currentTrack, setCurrentTrack] = useState<{ name: string; artists: string } | null>(null);
+  const [isPolling, setIsPolling] = useState(false);
 
   const analyzedTracks = useRef<Set<string>>(new Set());
   const pollingRef = useRef<NodeJS.Timeout | null>(null);
@@ -42,14 +43,8 @@ export default function Home() {
       return
     }
     setConnecting(true)
-  } 
-
-  const handleAnalyzeAnotherSong = () => {
-    resetPlayback()
-    checkPlayback()
-    pollingRef.current = setInterval(checkPlayback, 25000)
   }
-
+  
   // Clear state when needed 
   const resetPlayback = useCallback(() => {
     analyzedTracks.current.clear();
@@ -68,7 +63,7 @@ export default function Home() {
 
   // Check current Spotify Playback
   const checkPlayback = useCallback(async () => {
-    if (!spotifyToken || isAnalyzingRef.current || showResults) return;
+    if (!spotifyToken || isAnalyzingRef.current) return;
 
     const track = await getCurrentTrack(spotifyToken);
     if (!track || !track.is_playing) {
@@ -150,39 +145,50 @@ export default function Home() {
     }
   }, [spotifyToken, showResults, selectedTrackID, setShowPrompt, resetPlayback]);
 
+  const startPolling = useCallback(() => {
+    if (pollingRef.current) return
+    setIsPolling(true)
+    pollingRef.current = setInterval(checkPlayback, 20000)
+    checkPlayback()
+  }, [checkPlayback])
+
+  const stopPolling = useCallback(() => {
+    if(pollingRef.current) {
+      clearInterval(pollingRef.current)
+      pollingRef.current = null
+    }
+    setIsPolling(false)
+  }, [])
+
+  const handleAnalyzeAnotherSong = () => {
+    resetPlayback()
+    startPolling()
+  }
   
   //Poll track
   useEffect(() => {
     if (!spotifyToken || showResults) return
 
-    checkPlayback()
-    pollingRef.current = setInterval(checkPlayback, 25000);
+    startPolling()
     
     // Tab hidden
     const handleVisibilityChange = () => {
-      if (document.hidden && pollingRef.current) {
-        clearInterval(pollingRef.current);
-        pollingRef.current = null;
-      } else if (!document.hidden && !pollingRef.current) {
-        checkPlayback();
-        pollingRef.current = setInterval(checkPlayback, 25000);
+      if (document.hidden) {
+        stopPolling()
+      } else {
+        startPolling()
       }
     };
+
     document.addEventListener("visibilitychange", handleVisibilityChange);
 
     return () => {
-      if (pollingRef.current) clearInterval(pollingRef.current);
+      stopPolling()
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
 
-  }, [spotifyToken, checkPlayback])
+  }, [spotifyToken, showResults, startPolling, stopPolling])
 
-  //showPrompt if no track
-  useEffect(() => {
-    if (spotifyToken && !showPrompt && !loading && !showResults) {
-      setShowPrompt(true);
-    }
-  }, [spotifyToken, showPrompt, loading, showResults, setShowPrompt]);
 
   // Hide prompt when a history item is selected
   useEffect(() => {
@@ -216,8 +222,10 @@ export default function Home() {
       {/* Connecting state */}
       {connecting && !selectedTrackID && !spotifyToken && <LoadingSpinner message="Connecting to Spotify"/>}
 
+      {spotifyToken && !showResults && !isPolling && !loading && <SpotifyButton onClick={startPolling} label="Start Listening"/>}
+
       {/* Play song from Spotify */}
-      {spotifyToken && showPrompt && <PlayPromptButton />}
+      {spotifyToken && isPolling && !loading && !currentTrack && <PlayPromptButton onStop={stopPolling} />}
 
       {/* Mood Analysis Results */}
       {spotifyToken && (selectedAnalysis || (!loading && selectedTrackID && showResults && moodAnalysis)) && (

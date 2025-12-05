@@ -2,6 +2,7 @@
 import { Loader2, Music, Sparkles } from "lucide-react";
 import { MoodioLogo } from "../svg/moodio_logo";
 import { useMemo } from "react";
+import SpotifyLinkButton from "./Buttons/SpotifyLinkButton";
 
 interface HeaderProps {
   selectedTrackID: string | null;
@@ -45,18 +46,24 @@ export default function HeroHeader({ selectedTrackID, spotifyToken, loading, tra
         {!isAnalyzing && displayTrack && (
           <div className="flex flex-col items-center gap-2 sm:gap-4 justify-center">
             <div className="flex items-center gap-2 flex-wrap justify-center">
+              {/* Name */}
               {historyTrackName && <Sparkles className="w-5 h-5 text-yellow-400" />}
               {!historyTrackName && <Music className="w-5 h-5 text-green-400" />}
               <span className="font-bold text-black dark:text-white text-base sm:text-xl md:text-2xl truncate max-w-xs sm:max-w-sm md:max-w-md">
                 {displayTrack.name}
               </span>
-              {!historyTrackName && <Music className="w-5 h-5 text-green-400" />}
             </div>
+            {/* Artist */}
             {displayTrack.artist && (
               <span className="opacity-80 text-black dark:text-white text-sm sm:text-base truncate max-w-xs sm:max-w-sm md:max-w-md">
                 by {displayTrack.artist}
               </span>
             )}
+            <SpotifyLinkButton
+              trackUri={selectedTrackID}
+              trackName={displayTrack.name}
+              trackArtist={displayTrack.artist}
+            />
           </div>
         )}
         
