@@ -97,7 +97,7 @@ export default function Home() {
       const artistName = track.artists[0]?.name ?? "Unknown Artist";
 
       //ANALYZE MOOD
-      const result = await analyzeMood(artistName, track.name);
+      const result = await analyzeMood(artistName, track.name, spotifyToken);
 
       if (!result) {
         toast.error("Provider did not return analysis!");

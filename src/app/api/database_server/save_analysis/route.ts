@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
       .single();
     if (songError) throw songError;
 
-    // Save analysis (allows duplicate for history cases)
+    // Save analysis
     const { data: analysis, error: analysisError } = await supabaseClientJWT
       .from("analyses")
       .insert({
@@ -52,10 +52,10 @@ export async function POST(req: NextRequest) {
       const recs = analysisResult.recommendedTracks.map((r: any) => ({
         analyses_id: analysis.analyses_id,
         name: r.name,
-        artists: Array.isArray(r.artist) ? r.artist.join(", ") : r.artist,
-        note: r.note,
-        image: r.image,
-        uri: r.uri,
+        artists: Array.isArray(r.artist) ? r.artist.filter(Boolean).join(", ") : r.artist ?? "Unknown Artist",
+        note: r.note ?? null,
+        image: r.image ?? null,
+        uri: r.uri ?? null,
       }));
 
       const { error: recError } = await supabaseClientJWT
