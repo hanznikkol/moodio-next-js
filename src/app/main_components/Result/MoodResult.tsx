@@ -9,14 +9,15 @@ import { FaFacebookMessenger, FaFacebookSquare, FaInstagram, FaSpotify } from "r
 import { FaSquareXTwitter } from "react-icons/fa6";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import CopyClipboard from "../Icons/CopyClipboard";
+import SpotifyLinkButton from "../Buttons/SpotifyLinkButton";
+import { cn } from "@/lib/utils";
 
 interface MoodResultProps {
   analysis: AnalysisResult;
 }
 
 export default function MoodResult({ analysis }: MoodResultProps) {
-  const palettes = analysis?.colorPalette || [] 
-  // const decodedLyrics = analysis.lyrics || "No lyrics available";
+  const palettes = analysis?.colorPalette || []
 
   return (
     <Card className="w-full max-w-md lg:max-w-md  text-black dark:text-white bg-gray-50/80 dark:bg-white/10 backdrop-blur-xl border border-gray-200 dark:border-white/20 shadow-lg rounded-2xl duration-200">
@@ -59,18 +60,6 @@ export default function MoodResult({ analysis }: MoodResultProps) {
           </TooltipProvider>
         )}
 
-        {/* Lyrics soon feature */}
-        {/* 
-          <div className="flex flex-col w-full max-w-md">
-            <label className="text-xs font-semibold text-white/70 mb-1 uppercase tracking-wide">
-              Lyrics
-            </label>
-            <div className="font-serif p-4 max-h-48 overflow-y-auto bg-white/5 rounded-md whitespace-pre-wrap text-sm text-white/90">
-              {decodedLyrics}
-            </div>
-          </div>
-        */}
-
         {/* Recommended Tracks */}
         {analysis.recommendedTracks?.length > 0 && (
           <div className="w-full mt-4">
@@ -80,9 +69,11 @@ export default function MoodResult({ analysis }: MoodResultProps) {
             <div className="bg-gray-100 dark:bg-white/5 border border-white/10 rounded-xl overflow-hidden shadow-sm"> 
               <div>
                 <ul className="flex flex-col gap-2">
-                  {analysis.recommendedTracks.slice(0, 5).map((track, index) => (
+                  {analysis.recommendedTracks.slice(0, 5).map((track, index, arr) => (
                     <li key={track.id || track.name}
-                        className="flex items-center gap-3 p-3 transition-colors border-b border-black/10 dark:border-white/10"
+                        className={cn("flex items-center gap-3 p-3 transition-colors",
+                          index !== arr.length - 1 && "border-b border-black/10 dark:border-white/10"
+                        )}
                     >
                       {/* Album */}
                       {track.image ? (
@@ -106,21 +97,12 @@ export default function MoodResult({ analysis }: MoodResultProps) {
                         <span className="text-xs text-gray-600 dark:text-white/70 truncate">{track.artist}</span>
                       </div>
                       
-                      {/* Spotify Link */}
-                      <a
-                         href={
-                            track.uri?.startsWith("spotify:track:")
-                              ? `https://open.spotify.com/track/${track.uri.split(":")[2]}`
-                              : `https://open.spotify.com/search/${encodeURIComponent(track.name + " " + track.artist)}`
-                          }
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-1 text-green-400 hover:text-green-300 transition-colors font-semibold text-sm"
-                      >
-                        <FaSpotify className="w-4 h-4" />
-                        Listen
-                      </a>
-
+                      {/* Recommendation Spotify Links */}
+                      <SpotifyLinkButton
+                        trackUri= {track.uri}
+                        trackName= {track.name}
+                        trackArtist={track.artist}
+                      />
                     </li>
                   ))}
                 </ul>
