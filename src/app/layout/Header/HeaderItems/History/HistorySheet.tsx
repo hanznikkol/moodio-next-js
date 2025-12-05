@@ -1,7 +1,7 @@
 'use client'
 
 import { History, RefreshCw } from "lucide-react";
-import React, { useEffect, useState, useRef, useMemo } from "react";
+import React, { useEffect, useState, useRef, useMemo, useCallback } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { useSpotify } from "@/lib/spotifyLib/context/spotifyContext";
@@ -11,6 +11,7 @@ import { AnalysisResult } from "@/lib/analysisMoodLib/analysisResult";
 import { fetchAnalysisById, fetchHistoryBySpotifyId, mergeHistoryBySong, subscribeToRealtimeHistory } from "@/lib/history/historyHelper";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
+import HistoryItemComponent from "./HistoryItemComponent";
 
 interface HistorySheetProps {
   supabaseUserId: string
@@ -26,6 +27,7 @@ export default function HistorySheet({ supabaseUserId, onSelectHistory }: Histor
   const [searchQuery, setSearchQuery] = useState("")
   const [history, setHistory] = useState<MergedHistoryItem[]>(historyCache.current ?? []);
   const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [openSheet, setOpenSheet] = useState(false);
   const [loadingItemId, setLoadingItemId] = useState<string | null>(null);
 
@@ -37,18 +39,6 @@ export default function HistorySheet({ supabaseUserId, onSelectHistory }: Histor
     });
   };
 
-  const refreshButtonHandler = async () => {
-    setLoading(true)
-    try {
-      const fetchedHistory = await fetchHistoryBySpotifyId(profile?.id!)
-      setHistoryAndCache(fetchedHistory)
-    } catch(err) {
-      toast.error("Failed refresh")
-    } finally {
-      setLoading(false)
-    }
-  }
-
   const handleOpenSheet = async () => {
     setOpenSheet(true);
     if (!profile) return;
@@ -58,33 +48,41 @@ export default function HistorySheet({ supabaseUserId, onSelectHistory }: Histor
         supabaseUserId,
         setHistoryAndCache,
         historyCache
-      )
+      );
     }
 
-    if (historyCache.current) {
+    if (!historyCache.current?.length) {
+      setLoading(true);
+      try {
+        const fetchedHistory = await fetchHistoryBySpotifyId(profile.id);
+        setHistoryAndCache(mergeHistoryBySong(fetchedHistory));
+      } catch (err) {
+        console.error(err);
+        toast.error("Failed to load history");
+      } finally {
+        setLoading(false);
+      }
+    } else {
       setHistoryAndCache(historyCache.current);
-      return;
     }
+  }
 
-    setLoading(true);
+  const handleRefresh = async () => {
+    if (!profile) return;
+    setRefreshing(true); // small spinner
     try {
       const fetchedHistory = await fetchHistoryBySpotifyId(profile.id);
-      
-      const merged = mergeHistoryBySong([
-        ...(historyCache.current || []), 
-        ...fetchedHistory
-      ]);
-
-      setHistoryAndCache(merged)
+      setHistoryAndCache(
+        mergeHistoryBySong([...(historyCache.current || []), ...fetchedHistory])
+      );
     } catch (err) {
-      console.error(err);
-      toast.error("Failed to load history");
+      toast.error("Failed refresh");
     } finally {
-      setLoading(false);
+      setRefreshing(false);
     }
   };
 
-  const handleClickItem = async (item: MergedHistoryItem) => {
+  const handleClickItem = useCallback( async (item: MergedHistoryItem) => {
     if (analysesCache.current[item.analyses_id]) {
       onSelectHistory(analysesCache.current[item.analyses_id]);
       return;
@@ -107,7 +105,7 @@ export default function HistorySheet({ supabaseUserId, onSelectHistory }: Histor
     } finally {
       setLoadingItemId(null);
     }
-  }
+  }, [onSelectHistory]) 
 
   const filteredHistory = useMemo(() => {
     if (!searchQuery) return history
@@ -159,10 +157,10 @@ export default function HistorySheet({ supabaseUserId, onSelectHistory }: Histor
             <Input type="text" placeholder="Search..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}/>
             {/* Refresh */}
             <button
-              onClick={refreshButtonHandler}
+              onClick={handleRefresh}
               className="flex items-center gap-1 text-sm text-cyan-500 hover:text-cyan-400"
               >
-                <RefreshCw className="w-4 h-4" />
+                {refreshing ? <LoadingSpinner size="small"/> : <RefreshCw className="w-4 h-4"/>}
             </button>
           </div>
         </SheetHeader>
@@ -182,26 +180,12 @@ export default function HistorySheet({ supabaseUserId, onSelectHistory }: Histor
 
                   <ul className="space-y-3">
                     {grouped[date].map((item) => (
-                      <li
+                      <HistoryItemComponent
                         key={item.analyses_id}
-                        className="group cursor-pointer border hover:border-cyan-400 hover:bg-white/10 transition-colors duration-200 rounded-lg p-3 bg-white/5 flex flex-col gap-1"
-                        onClick={() => handleClickItem(item)}
-                      >
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <p className="font-medium">{item.songs?.name}</p>
-                            <p className="text-sm text-gray-400">{item.songs?.artist}</p>
-                            <p className="text-xs italic">{item.mood}</p>
-                            {item.count > 1 && (
-                              <p className="text-xs text-cyan-400">analyzed {item.count}x consecutively</p>
-                            )}
-                          </div>
-                          {loadingItemId === item.analyses_id && <LoadingSpinner color="border-cyan-400" size="small" />}
-                        </div>
-                        <p className="text-xs text-gray-400">
-                          Latest: {new Date(item.latestTime).toLocaleTimeString()}
-                        </p>
-                      </li>
+                        item = {item}
+                        loadingItemId = {loadingItemId}
+                        onClick = {handleClickItem}
+                      />
                     ))}
                   </ul>
                 </React.Fragment>
