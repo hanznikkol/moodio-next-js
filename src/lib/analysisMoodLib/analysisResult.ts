@@ -1,9 +1,8 @@
 export type RecommendedTrack = {
-  id?: string;
   name: string;
   artist: string;
   note?: string;
-  image?: string;
+  image?: string | null;
   uri?: string | null;
 };
 

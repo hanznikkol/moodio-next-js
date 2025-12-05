@@ -20,14 +20,26 @@ async function retry<T>(fn: () => Promise<T>, retries = 2, delayMs = 1000): Prom
 }
 
 // Search Spotify track to get a working URI
-async function searchSpotifyTrack(name: string, artist: string, token: string): Promise<string | null> {
+async function searchSpotifyTrack(
+  name: string, 
+  artist: string, 
+  token: string
+): Promise<{uri: string, image: string | null, id: string} | null> {
+
   const query = encodeURIComponent(`${name} ${artist}`);
   const res = await fetch(`https://api.spotify.com/v1/search?q=${query}&type=track&limit=1`, {
     headers: { Authorization: `Bearer ${token}` },
   });
+
   const data = await res.json();
+
   if (data.tracks?.items?.length > 0) {
-    return data.tracks.items[0].external_urls.spotify;
+    const track = data.tracks.items[0]
+    return {
+      uri: track.external_urls.spotify,
+      image: track.album.images?.[0]?.url ?? null,
+      id: track.id
+    }
   }
   return null;
 }
@@ -44,7 +56,7 @@ async function analyzeSongCore(artist: string, songTitle: string): Promise<Omit<
       "colorPalette": string[],
       "spotifyTrackId": string|null,
       "recommendedTracks": [
-        { "id": string|null, "name": string, "artist": string, "note": string|null }
+        { "name": string, "artist": string, "note": string|null }
       ]
     }
     Rules:
@@ -103,8 +115,12 @@ export async function analyzeMoodServer(artist: string, songTitle: string, SPOTI
     // Verify recommendedTracks URIs with Spotify API
     const recommendedTracksWithUri: RecommendedTrack[] = await Promise.all(
       coreData.recommendedTracks.map(async (track) => {
-        const uri = await searchSpotifyTrack(track.name, track.artist, SPOTIFY_ACCESS_TOKEN);
-        return { ...track, uri: uri ?? track.uri ?? null };
+        const spotifyData = await searchSpotifyTrack(track.name, track.artist, SPOTIFY_ACCESS_TOKEN)
+        return {
+          ...track,
+          uri: spotifyData?.uri ?? track.uri ?? null,
+          image: spotifyData?.image ?? track.image ?? null,
+        }
       })
     );
 
