@@ -6,7 +6,7 @@ import React from 'react';
 import ThemeToggleButton from '../../main_components/Buttons/ThemeToggleButton';
 import { MoodioSoloLogo } from '@/app/svg/moodio_solo';
 import ProfileMenu from './HeaderItems/ProfileMenu';
-import HistorySheet from './HeaderItems/HistorySheet'; 
+import HistorySheet from './HeaderItems/History/HistorySheet'; 
 import { useMood } from '@/lib/history/context/moodHistoryContext';
 
 export default function Header() {
