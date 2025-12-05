@@ -51,30 +51,31 @@ export default function HistorySheet({ supabaseUserId, onSelectHistory }: Histor
 
   const handleOpenSheet = async () => {
     setOpenSheet(true);
-
     if (!profile) return;
 
-    // Use cache immediately
+    if (!realtimeUnsubscribe.current && supabaseUserId) {
+      realtimeUnsubscribe.current = subscribeToRealtimeHistory(
+        supabaseUserId,
+        setHistoryAndCache,
+        historyCache
+      )
+    }
+
     if (historyCache.current) {
       setHistoryAndCache(historyCache.current);
-
-      // subscribe once
-      if (!realtimeUnsubscribe.current && supabaseUserId) {
-        realtimeUnsubscribe.current = subscribeToRealtimeHistory(supabaseUserId, setHistoryAndCache, historyCache);
-      }
-
       return;
     }
 
     setLoading(true);
     try {
       const fetchedHistory = await fetchHistoryBySpotifyId(profile.id);
-      setHistoryAndCache(fetchedHistory);
-      historyCache.current = fetchedHistory;
+      
+      const merged = mergeHistoryBySong([
+        ...(historyCache.current || []), 
+        ...fetchedHistory
+      ]);
 
-      if (!realtimeUnsubscribe.current && supabaseUserId) {
-        realtimeUnsubscribe.current = subscribeToRealtimeHistory(supabaseUserId, setHistoryAndCache, historyCache);
-      }
+      setHistoryAndCache(merged)
     } catch (err) {
       console.error(err);
       toast.error("Failed to load history");
@@ -140,42 +141,6 @@ export default function HistorySheet({ supabaseUserId, onSelectHistory }: Histor
     const s = Object.keys(g).sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
     return { grouped: g, sortedDates: s };
   }, [filteredHistory]);
-
-  useEffect(() => {
-      if (!supabaseUserId || !profile) return;
-    if (realtimeUnsubscribe.current) return
-
-    const fetchAndSubscribe = async () => {
-      try{
-
-        const fethedHistory = await fetchHistoryBySpotifyId(profile?.id)
-        setHistoryAndCache(fethedHistory)
-
-        // Subscribe to realtime updates
-        if (!realtimeUnsubscribe.current) {
-          realtimeUnsubscribe.current = subscribeToRealtimeHistory(
-            supabaseUserId,
-            setHistoryAndCache,
-            historyCache
-          );
-        }
-      } catch (err) {
-        console.error(err);
-        toast.error("Failed to load history");
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    fetchAndSubscribe()
-
-    return () => {
-      if (realtimeUnsubscribe.current) {
-        realtimeUnsubscribe.current()
-        realtimeUnsubscribe.current = null
-      }
-    }
-  }, [supabaseUserId, profile])
 
   return (
     <Sheet open={openSheet} onOpenChange={setOpenSheet}>
