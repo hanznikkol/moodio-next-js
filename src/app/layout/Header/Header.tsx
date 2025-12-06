@@ -21,7 +21,6 @@ export default function Header() {
       {/* Right */}
       <div className='flex items-center gap-4'>
 
-      
         {/* History */}
         {profile && userId && (
           <HistorySheet
