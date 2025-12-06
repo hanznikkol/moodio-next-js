@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import axios from "axios";
 import { AnalysisResult, RecommendedTrack } from "./analysisResult";
 import { GoogleGenAI } from "@google/genai";
 
@@ -18,6 +19,23 @@ async function retry<T>(fn: () => Promise<T>, retries = 2, delayMs = 1000): Prom
   }
   throw lastError
 }
+
+//Get Genius Lyrics
+async function fetchGeniusUrl(trackName: string, trackArtist: string): Promise<string | null> {
+  try {
+    const res = await axios.get(`http:/localhost:3000/api/result_server/genius-lyrics`, {
+      params: {
+        title: trackName,
+        artist: trackArtist
+      }
+    })
+
+    return res.data.url ?? null;
+  } catch (err) {
+    console.warn("Genius URL fetch failed:", err)
+    return null
+  }
+} 
 
 // Search Spotify track to get a working URI
 async function searchSpotifyTrack(
@@ -67,6 +85,7 @@ async function analyzeSongCore(artist: string, songTitle: string): Promise<Omit<
     - Consider **similar genre, tempo, mood, lyrical theme, or instrumentation**.
     - Return exactly 5 (max) tracks that are **musically or emotionally related** to this song.
     - Use double quotes for all strings.
+    - For the "note" field in recommendedTracks, write a short note explaining **why it relates and is recommended** to the main track.
     - colorPalette must be in Hex code.
     - If a field is unavailable, return null.
   `;
@@ -106,13 +125,16 @@ export async function analyzeMoodServer(artist: string, songTitle: string, SPOTI
   if (!artist || !songTitle) return null;
 
   try {
+    // AI Analyze Data
     const coreData = await analyzeSongCore(artist, songTitle);
+    // Genius Lyrics
+    const mainLyricsUrl = await fetchGeniusUrl(songTitle, artist)
 
-  if (!SPOTIFY_ACCESS_TOKEN) {
-    console.warn("Spotify token missing: recommended track URIs may not be fetched.");
-  }
+    if (!SPOTIFY_ACCESS_TOKEN) {
+      console.warn("Spotify token missing: recommended track URIs may not be fetched.");
+    }
 
-    // Verify recommendedTracks URIs with Spotify API
+    // RecommendedTracks URIs with Spotify API
     const recommendedTracksWithUri: RecommendedTrack[] = await Promise.all(
       coreData.recommendedTracks.map(async (track) => {
         const spotifyData = await searchSpotifyTrack(track.name, track.artist, SPOTIFY_ACCESS_TOKEN)
@@ -124,7 +146,7 @@ export async function analyzeMoodServer(artist: string, songTitle: string, SPOTI
       })
     );
 
-    return { ...coreData, recommendedTracks: recommendedTracksWithUri };
+    return { ...coreData, lyrics: mainLyricsUrl ?? null , recommendedTracks: recommendedTracksWithUri };
   } catch (error) {
     console.error("Error analyzing mood:", error);
     return null;

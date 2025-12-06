@@ -3,6 +3,8 @@ import { Loader2, Music, Sparkles } from "lucide-react";
 import { MoodioLogo } from "../svg/moodio_logo";
 import { useMemo } from "react";
 import SpotifyLinkButton from "./Buttons/SpotifyLinkButton";
+import GeniusLinkButton from "./Buttons/GeniusLinkButton";
+import { AnalysisResult } from "@/lib/analysisMoodLib/analysisResult";
 
 interface HeaderProps {
   selectedTrackID: string | null;
@@ -12,9 +14,9 @@ interface HeaderProps {
   trackArtist?: string | null;
   historyTrackName?: string | null;
   historyTrackArtist?: string | null;
+  analysis?: AnalysisResult | null;
 }
-
-export default function HeroHeader({ selectedTrackID, spotifyToken, loading, trackName, trackArtist, historyTrackName, historyTrackArtist }: HeaderProps) {
+export default function HeroHeader({ selectedTrackID, spotifyToken, loading, trackName, trackArtist, historyTrackName, historyTrackArtist, analysis }: HeaderProps) {
 
   const displayTrack = useMemo(() => {
     if (historyTrackName) return { name: historyTrackName, artist: historyTrackArtist };
@@ -59,11 +61,22 @@ export default function HeroHeader({ selectedTrackID, spotifyToken, loading, tra
                 by {displayTrack.artist}
               </span>
             )}
-            <SpotifyLinkButton
-              trackUri={selectedTrackID}
-              trackName={displayTrack.name}
-              trackArtist={displayTrack.artist}
-            />
+
+            {/* Track Spotify and Lyrics Link Redirect */}
+            <div className="flex items-center gap-2">
+              <SpotifyLinkButton
+                trackUri={selectedTrackID}
+                trackName={displayTrack.name}
+                trackArtist={displayTrack.artist}
+              />
+              
+              <GeniusLinkButton
+                trackName={displayTrack.name}
+                trackArtist={displayTrack.artist}
+                analysis={analysis}
+              />
+            </div>
+
           </div>
         )}
         

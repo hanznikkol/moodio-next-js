@@ -12,7 +12,7 @@ export async function analyzeMood(artist: string, songTitle: string, spotifyToke
   }
   
   try {
-    const res = await axios.post("/api/analyzeMood", { artist, songTitle, spotifyToken });
+    const res = await axios.post("/api/result_server/analyzeMood", { artist, songTitle, spotifyToken });
     const data = res.data as AnalysisResult
     cache.set(key, data)
     return res.data;

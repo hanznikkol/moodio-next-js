@@ -14,7 +14,7 @@ function ColorPaletteComponent({colors}: ColorPaletteComponentProps) {
                     <TooltipTrigger asChild>
                         <div
                             style={{ backgroundColor: color }}
-                            className="w-8 h-8 rounded-md shadow-sm border border-gray-300 dark:border-white/20 cursor-pointer"
+                            className="w-8 h-8 rounded-md shadow-sm border border-gray-300 dark:border-white/20"
                         />
                     </TooltipTrigger>
                     <TooltipContent>

@@ -208,6 +208,7 @@ export default function Home() {
         trackArtist={currentTrack?.artists ?? null}
         historyTrackName={selectedAnalysis?.trackName ?? null}
         historyTrackArtist={selectedAnalysis?.trackArtist ?? null}
+        analysis={selectedAnalysis ?? moodAnalysis}
       />
 
       {/* Spotify Button */}
