@@ -1,7 +1,7 @@
 "use client";
 
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger } from "@/components/ui/drawer";
-import { BarChart3, History, Info, Link, ScanLine, Sparkles } from "lucide-react";
+import { BarChart3, History, Info, Link, ScanLine, Share2, Sparkles } from "lucide-react";
 
 function HowToUse() {
   return (
@@ -80,6 +80,18 @@ function HowToUse() {
               <p className="text-muted-foreground text-sm">
                 Quickly preview your previous mood checks so you can see your recent results
                 at a glance.
+              </p>
+            </div>
+          </div>
+
+          {/* Step 6 */}
+          <div className="flex items-center gap-3">
+            <Share2 className="w-5 h-5 mt-[2px] dark:text-yellow-400 text-cyan-500"/>
+            <div>
+              <p className="font-medium text-base">6. Share Moodio to Your Friends</p>
+              <p className="text-muted-foreground text-sm">
+                Loved the experience? Share the app with your friends so they can discover
+                their own music-driven mood insights too!
               </p>
             </div>
           </div>

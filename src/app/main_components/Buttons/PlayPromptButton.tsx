@@ -24,7 +24,7 @@ export default function PlayPromptButton({onStop}: PlayPromptButtonProps) {
       {onStop && (
         <button
           onClick={onStop}
-          className="flex gap-2 items-center mt-2 px-4 py-2 bg-transparent text-red-500 border border-red-500 rounded-md text-sm hover:bg-red-500 hover:text-white transition-all"
+          className="flex gap-2 items-center mt-2 px-4 py-2 bg-transparent text-red-500 border border-red-500 rounded-md text-sm hover:bg-red-500 hover:text-white transition-all hover:cursor-pointer"
         >
           <Square className='w-4 h-4 fill-red-500'/>
           Stop Listening
