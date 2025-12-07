@@ -49,6 +49,14 @@ export const mergeHistoryBySong = ( history: (HistoryItem | MergedHistoryItem)[]
   return Array.from(map.values());
 };
 
+export const updateFavorite = async (userId: string, analyses_id: string, isFavorite: boolean) => {
+  const {error} = await supabase
+    .from("song_history")
+    .update({ is_favorite: isFavorite})
+    .eq("user_id", userId)
+    .eq("analyses_id", analyses_id)
+  if (error) throw error;
+}
 
 //REALTIME 
 export const subscribeToRealtimeHistory = (
@@ -87,6 +95,9 @@ export const subscribeToRealtimeHistory = (
             track_name: song.name,
             songs: { name: song.name, artist: song.artist },
             latestTime: payload.new.created_at,
+            is_favorite: false,
+            count: 1,
+            key: `${song.name}-${song.artist}-${payload.new.mood}`
           };
           updater((prev) => handleUpdate(mergeHistoryBySong([newItem, ...prev])));
         }

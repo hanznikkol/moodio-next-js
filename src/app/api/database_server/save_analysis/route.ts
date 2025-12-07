@@ -64,7 +64,21 @@ export async function POST(req: NextRequest) {
       if (recError) throw recError;
     }
 
+    // Save to song_history
+    const { error: historyError } = await supabaseClientJWT
+      .from("song_history")
+      .upsert({
+        user_id: user.id,
+        analyses_id: analysis.analyses_id,
+        is_favorite: false,        
+        count: 1, 
+      }, { onConflict: "unique_user_analysis" });
+
+    if (historyError) throw historyError;
+
+
     return NextResponse.json({ saved: analysis });
+    
     
   } catch (err: any) {
     console.error("Error in API route:", err);

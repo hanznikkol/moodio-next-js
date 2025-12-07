@@ -19,21 +19,21 @@ export async function GET(req: NextRequest) {
         if (userError || !user) return NextResponse.json({error: "User not found"}, {status: 404})
 
         const { data, error } = await supabaseAdmin
-        .from("analyses")
-        .select(`
-            analyses_id,
-            mood,
-            created_at,
-            songs (
-                name,
-                artist
-            ),
-            users (
-            spotify_id
-            )
-        `)
-        .eq("user_id", user.user_id)
-        .order("created_at", { ascending: false });
+            .from("analyses")
+            .select(`
+                analyses_id,
+                mood,
+                created_at,
+                songs (
+                    name,
+                    artist
+                ),
+                users (
+                spotify_id
+                )
+            `)
+            .eq("user_id", user.user_id)
+            .order("created_at", { ascending: false });
         
         if(error) return NextResponse.json({error: error.message}, {status: 500})
         // console.log(data)
