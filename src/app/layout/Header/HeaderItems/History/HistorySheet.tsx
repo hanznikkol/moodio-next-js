@@ -8,10 +8,12 @@ import { useSpotify } from "@/lib/spotifyLib/context/spotifyContext";
 import { HistoryItem, MergedHistoryItem } from "@/lib/history/historyTypes";
 import LoadingSpinner from "@/app/main_components/LoadingSpinner";
 import { AnalysisResult } from "@/lib/analysisMoodLib/analysisResult";
-import { fetchAnalysisById, fetchHistoryBySpotifyId, mergeHistoryBySong, subscribeToRealtimeHistory } from "@/lib/history/historyHelper";
+import { fetchAnalysisById, fetchHistoryBySpotifyId, mergeHistoryBySong, subscribeToRealtimeHistory, updateFavorite } from "@/lib/history/historyHelper";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import HistoryItemComponent from "./HistoryItemComponent";
+import axios from "axios";
+import { supabase } from "@/lib/supabase/supabaseClient";
 
 interface HistorySheetProps {
   supabaseUserId: string
@@ -22,6 +24,7 @@ export default function HistorySheet({ supabaseUserId, onSelectHistory }: Histor
   const historyCache = useRef<MergedHistoryItem[] | null>(null);
   const analysesCache = useRef<Record<string, AnalysisResult>>({});
   const realtimeUnsubscribe = useRef<(() => void) | null>(null);
+  const favoriteLock = useRef<Set<string>>(new Set())
 
   const { profile } = useSpotify();
   const [searchQuery, setSearchQuery] = useState("")
@@ -38,6 +41,33 @@ export default function HistorySheet({ supabaseUserId, onSelectHistory }: Histor
       return newState;
     });
   };
+
+  const handleFavorites = async (item: MergedHistoryItem, newItem: boolean) => {
+    if (!supabaseUserId) return
+    if (favoriteLock.current.has(item.analyses_id)) return
+    favoriteLock.current.add(item.analyses_id)
+
+    setHistory(prev => prev.map(h => h.analyses_id === item.analyses_id ? {...h, is_favorite: newItem} : h))
+
+    if(newItem) {
+      toast.success("Added to Favorites")
+    } else {
+      toast.warning("Removed from Favorites")
+    }
+    try {
+      await updateFavorite(supabaseUserId, item.analyses_id, newItem)
+    } catch(err) {
+      console.error(err);
+      setHistory(prev => prev.map(h => h.analyses_id === item.analyses_id ? { ...h, is_favorite: !newItem } : h));
+      toast.error("Failed to add favorite");
+    } finally {
+      favoriteLock.current.delete(item.analyses_id)
+    }
+  }
+
+  const handleDelete = (item: MergedHistoryItem) => {
+    setHistory(prev => prev.filter(h => h.analyses_id !== item.analyses_id))
+  }
 
   const handleOpenSheet = async () => {
     setOpenSheet(true);
@@ -69,7 +99,7 @@ export default function HistorySheet({ supabaseUserId, onSelectHistory }: Histor
 
   const handleRefresh = async () => {
     if (!profile) return;
-    setRefreshing(true); // small spinner
+    setRefreshing(true);
     try {
       const fetchedHistory = await fetchHistoryBySpotifyId(profile.id);
       setHistoryAndCache(
@@ -125,10 +155,18 @@ export default function HistorySheet({ supabaseUserId, onSelectHistory }: Histor
       );
     })
   }, [history, searchQuery])
+  
+  const favorites = useMemo(() => {
+    return filteredHistory.filter(item => item.is_favorite);
+  }, [filteredHistory]);
+
+  const nonFavorites = useMemo(() => {
+    return filteredHistory.filter(item => !item.is_favorite);
+  }, [filteredHistory]);
 
   //Group Items and Sorted Dates
-  const { grouped, sortedDates } = useMemo(() => {
-    const g = filteredHistory.reduce<Record<string, MergedHistoryItem[]>>((acc, item) => {
+  const { grouped: groupedNonFav, sortedDates: sortedDatesNonFav } = useMemo(() => {
+    const g = nonFavorites.reduce<Record<string, MergedHistoryItem[]>>((acc, item) => {
       const latestTime = item.latestTime ?? item.created_at ?? new Date().toISOString();
       const date = latestTime.split("T")[0];
       if (!acc[date]) acc[date] = [];
@@ -138,7 +176,7 @@ export default function HistorySheet({ supabaseUserId, onSelectHistory }: Histor
 
     const s = Object.keys(g).sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
     return { grouped: g, sortedDates: s };
-  }, [filteredHistory]);
+  }, [nonFavorites]);
 
   return (
     <Sheet open={openSheet} onOpenChange={setOpenSheet}>
@@ -166,25 +204,45 @@ export default function HistorySheet({ supabaseUserId, onSelectHistory }: Histor
         </SheetHeader>
 
         <ScrollArea className="flex-1 overflow-y-auto p-2">
-          {loading ? (
-            <LoadingSpinner color="border-cyan-400" />
-          ) : history.length === 0 ? (
+          {loading ? ( <LoadingSpinner color="border-cyan-400" />) : history.length === 0 ? (
             <p className="text-center text-gray-400">No history yet.</p>
           ) : (
             <div className="space-y-6">
-              {sortedDates.map((date) => (
+              {/* Favorites */}
+              {favorites.length > 0 && (
+                <>
+                  <p className="font-semibold mb-2">Favorites</p>
+                  <ul className="space-y-3">
+                    {favorites.map(item => (
+                      <HistoryItemComponent
+                        key={item.analyses_id}
+                        item={item}
+                        loadingItemId={loadingItemId}
+                        onClick={handleClickItem}
+                        onDelete={handleDelete}
+                        onFavorite={handleFavorites}
+                      />
+                    ))}
+                  </ul>
+                </>
+              )}
+
+              {/* List */}
+              {sortedDatesNonFav.map((date) => (
                 <React.Fragment key={date}>
                   <p className="font-semibold mb-2">
                     {new Date(date).toLocaleDateString()}
                   </p>
 
                   <ul className="space-y-3">
-                    {grouped[date].map((item) => (
+                    {groupedNonFav[date].map((item) => (
                       <HistoryItemComponent
                         key={item.analyses_id}
                         item = {item}
                         loadingItemId = {loadingItemId}
                         onClick = {handleClickItem}
+                        onDelete={handleDelete}
+                        onFavorite={handleFavorites}
                       />
                     ))}
                   </ul>
