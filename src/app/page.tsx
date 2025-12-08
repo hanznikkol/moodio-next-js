@@ -5,9 +5,8 @@ import { toast } from "sonner";
 import type { AnalysisResult } from "@/lib/analysisMoodLib/analysisResult";
 import LoadingSpinner from "./main_components/LoadingSpinner";
 import HeroHeader from "./main_components/HeroHeader";
-import { getCurrentTrack, getUserProfile } from "@/lib/spotifyLib/spotifyHelper";
+import { getCurrentTrack } from "@/lib/spotifyLib/spotifyHelper";
 import { useSpotify } from "@/lib/spotifyLib/context/spotifyContext";
-import { analyzeMood } from "@/lib/analysisMoodLib/analysisMoodHelper";
 import MoodResult from "./main_components/Result/MoodResult";
 import PlayPromptButton from "./main_components/Buttons/PlayPromptButton";
 import { useMood } from "@/lib/history/context/moodHistoryContext";
@@ -15,7 +14,7 @@ import { supabase } from "@/lib/supabase/supabaseClient";
 import { analyzeAndSaveTrack } from "@/lib/analysisMoodLib/analyzeAndSave";
 
 export default function Home() {
-  const {spotifyToken, connecting, setConnecting, showPrompt , setShowPrompt, supabaseJWT } = useSpotify();
+  const {spotifyToken, connecting, setConnecting , setShowPrompt, supabaseJWT } = useSpotify();
   const {selectedAnalysis, setSelectedAnalysis, showResults, setShowResults } = useMood();
 
   const [selectedTrackID, setSelectedTrackID] = useState<string | null>(null);
@@ -44,6 +43,8 @@ export default function Home() {
       return
     }
     setConnecting(true)
+    manualStopRef.current = true;
+    setShowPrompt(false);
   }
   
   // Clear state when needed 
@@ -55,8 +56,7 @@ export default function Home() {
     setSelectedTrackID(null);
     setCurrentTrack(null);
     setMoodAnalysis(null);
-    setShowPrompt(true);
-
+      setShowPrompt(true);
     // Reset mood history selection
     setSelectedAnalysis(null);
     setShowResults(false);
@@ -81,7 +81,10 @@ export default function Home() {
       setCurrentTrack(null);
       setShowResults(false);
       setMoodAnalysis(null);
-      setShowPrompt(true);
+      if (!manualStopRef.current && !connecting) {
+        setShowPrompt(true)
+      }
+
       return;
     }
 
@@ -141,8 +144,6 @@ export default function Home() {
   useEffect(() => {
     if (!spotifyToken || showResults || manualStopRef.current) return
 
-    startPolling()
-
     const handleVisibilityChange = () => {
       if (document.hidden) stopPolling()
       else startPolling()
@@ -194,6 +195,7 @@ export default function Home() {
         <SpotifyButton
           onClick={() => {
             manualStopRef.current = false
+            setShowPrompt(true);
             startPolling()
           }}
           label="Start Listening"

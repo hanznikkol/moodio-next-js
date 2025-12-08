@@ -6,20 +6,16 @@ import { GoogleGenAI } from "@google/genai";
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! })
 
 //Retry helper
-async function retry<T>(fn: () => Promise<T>, retries = 2, delayMs = 1000): Promise<T> {
-  let lastError: any;
-  for (let i = 0; i <= retries; i++) {
-     try {
-      return await fn();
-     } catch (err){
-      lastError = err;
-      console.warn(`Retry ${i + 1} failed:`, err);
-      if (i < retries) await new Promise(r => setTimeout(r, delayMs));
-     }
+async function retry<T>(fn: () => Promise<T>, delayMs = 1000): Promise<T> {
+  try {
+    return await fn();
+  } catch (err) {
+    console.warn("Retry 1 failed:", err);
+    // wait before retrying
+    await new Promise(r => setTimeout(r, delayMs));
+    return fn();
   }
-  throw lastError
 }
-
 //Get Genius Lyrics
 async function fetchGeniusUrl(trackName: string, trackArtist: string): Promise<string | null> {
   try {
