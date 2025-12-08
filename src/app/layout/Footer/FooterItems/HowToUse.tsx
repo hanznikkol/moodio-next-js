@@ -28,10 +28,9 @@ function HowToUse() {
           <div className="flex items-start gap-3">
             <Link className="w-5 h-5 mt-[2px] dark:text-yellow-400 text-cyan-500" />
             <div>
-              <p className="font-medium text-base">1. Connect your Spotify Account</p>
+              <p className="font-medium text-base">1. Connect Spotify</p>
               <p className="text-muted-foreground text-sm">
-                Tap the <span className="font-medium">“Connect with Spotify”</span> button so the app 
-                can access your public playlists and recently played tracks.
+                Tap the <span className="font-medium">“Connect with Spotify”</span> button to link your account.
               </p>
             </div>
           </div>
@@ -40,11 +39,10 @@ function HowToUse() {
           <div className="flex items-start gap-3">
             <ScanLine className="w-5 h-5 mt-[2px] dark:text-yellow-400 text-cyan-500" />
             <div>
-                <p className="font-medium text-base">2. Play Music in Spotify</p>
-                <p className="text-muted-foreground text-sm">
-                    Open Spotify and play any song you like. The system will automatically 
-                    detect your currently playing track and prepare it for analysis.
-                </p>
+              <p className="font-medium text-base">2. Play a Song</p>
+              <p className="text-muted-foreground text-sm">
+                Open Spotify and play any track. Gemini AI will detect it automatically.
+              </p>
             </div>
           </div>
 
@@ -52,11 +50,10 @@ function HowToUse() {
           <div className="flex items-start gap-3">
             <Sparkles className="w-5 h-5 mt-[2px] dark:text-yellow-400 text-cyan-500" />
             <div>
-                <p className="font-medium text-base">3. Let Gemini AI Analyze Your Mood</p>
-                <p className="text-muted-foreground text-sm">
-                Gemini AI analyzes your current song’s energy, mood, acoustic features, 
-                and listening behavior to generate a personalized emotional profile.
-                </p>
+              <p className="font-medium text-base">3. Wait for Analysis</p>
+              <p className="text-muted-foreground text-sm">
+                Gemini AI analyzes the song’s mood, energy, and features to create your mood profile.
+              </p>
             </div>
           </div>
 
@@ -64,22 +61,20 @@ function HowToUse() {
           <div className="flex items-start gap-3">
             <BarChart3 className="w-5 h-5 mt-[2px] dark:text-yellow-400 text-cyan-500" />
             <div>
-              <p className="font-medium text-base">4. View Your Mood Insights & Track Recommendations</p>
+              <p className="font-medium text-base">4. View Mood Insights</p>
               <p className="text-muted-foreground text-sm">
-                See your analyzed mood, color palette, and a list of recommended tracks
-                that match or balance your current listening vibe. Tap a track to open it in Spotify
+                Check your mood, color palette, and recommended tracks that fit your current vibe.
               </p>
             </div>
           </div>
-          
+
           {/* Step 5 */}
           <div className="flex items-start gap-3">
             <History className="w-5 h-5 mt-[2px] dark:text-yellow-400 text-cyan-500" />
             <div>
-              <p className="font-medium text-base">5. View Your Analysis History</p>
+              <p className="font-medium text-base">5. Check History & Favorites</p>
               <p className="text-muted-foreground text-sm">
-                Quickly preview your previous mood checks so you can see your recent results
-                at a glance.
+                Review your past mood analyses, track your listening patterns, and save your favorite songs.
               </p>
             </div>
           </div>
@@ -88,10 +83,9 @@ function HowToUse() {
           <div className="flex items-center gap-3">
             <Share2 className="w-5 h-5 mt-[2px] dark:text-yellow-400 text-cyan-500"/>
             <div>
-              <p className="font-medium text-base">6. Share Moodio to Your Friends</p>
+              <p className="font-medium text-base">6. Share with Friends</p>
               <p className="text-muted-foreground text-sm">
-                Loved the experience? Share the app with your friends so they can discover
-                their own music-driven mood insights too!
+                Invite friends to try Gemini AI and discover their own mood insights.
               </p>
             </div>
           </div>
