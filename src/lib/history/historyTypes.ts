@@ -14,4 +14,14 @@ export type MergedHistoryItem = HistoryItem & {
   key: string;
   count: number;
   latestTime: string;
+  is_archived: boolean
+};
+
+export type SongHistoryRow = {
+  user_id: string;
+  analyses_id: string;
+  is_favorite: boolean;
+  is_archived: boolean;
+  count: number;
+  created_at: string;
 };
