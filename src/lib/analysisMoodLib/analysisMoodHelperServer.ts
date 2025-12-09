@@ -2,24 +2,14 @@
 import axios from "axios";
 import { AnalysisResult, RecommendedTrack } from "./analysisResult";
 import { GoogleGenAI } from "@google/genai";
+import JSON5 from "json5";
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! })
 
-//Retry helper
-async function retry<T>(fn: () => Promise<T>, delayMs = 1000): Promise<T> {
-  try {
-    return await fn();
-  } catch (err) {
-    console.warn("Retry 1 failed:", err);
-    // wait before retrying
-    await new Promise(r => setTimeout(r, delayMs));
-    return fn();
-  }
-}
 //Get Genius Lyrics
 async function fetchGeniusUrl(trackName: string, trackArtist: string): Promise<string | null> {
   try {
-    const res = await axios.get(`http:/localhost:3000/api/result_server/genius-lyrics`, {
+    const res = await axios.get(`http://localhost:3000/api/result_server/genius-lyrics`, {
       params: {
         title: trackName,
         artist: trackArtist
@@ -60,7 +50,6 @@ async function searchSpotifyTrack(
 
 //Core analyze
 async function analyzeSongCore(artist: string, songTitle: string): Promise<Omit<AnalysisResult, "lyrics">> {
-  
   const prompt = `
     Analyze the song "${songTitle}" by "${artist}".
     Return JSON following this schema:
@@ -73,33 +62,45 @@ async function analyzeSongCore(artist: string, songTitle: string): Promise<Omit<
         { "name": string, "artist": string, "note": string|null }
       ]
     }
+
     Rules:
     - Return ONLY valid JSON, no extra text.
-    - Mood must be **2 descriptive words**
-    - Also include meaning and history of the song and the reason of the mood in "explanation" in a short paragraph.
-    - Avoid repeating common moods like "nostalgic" or "melancholic" in every result.
+    - Mood must be **2 descriptive and type of mood words**
+    - Also include meaning and history of the song and the reason of the mood in "explanation" in 200 max characters.
     - Consider **similar genre, tempo, mood, lyrical theme, or instrumentation**.
     - Return exactly 5 (max) tracks that are **musically or emotionally related** to this song.
     - Use double quotes for all strings.
     - For the "note" field in recommendedTracks, write a short note explaining **why it relates and is recommended** to the main track.
     - colorPalette must be in Hex code.
     - If a field is unavailable, return null.
+    - Do NOT use double quotes inside string values. If needed, use single quotes or escape them.
+    - All string values must be on a single line. Do not insert line breaks inside quotes.
   `;
 
-  const result = await retry(async () => {
-      const response = await ai.models.generateContent({
-      model: "gemini-2.0-flash",
+  try {
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
       contents: [prompt],
-      config: { maxOutputTokens: 1500, temperature: 0.7 }
+      config: { maxOutputTokens: 2500, temperature: 0.7 }
     });
 
     const raw = response.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
     if (!raw) throw new Error("No AI response for song analysis");
+    console.log(raw)
 
+    // clean the raw text
     const jsonText = raw.replace(/^```json\s*/i, "").replace(/^```\s*/i, "").replace(/```$/i, "").trim();
-    const data = JSON.parse(jsonText);
+    
+    let data;
+    // Checking in parsed data
+    try {
+       data = JSON5.parse(jsonText);
+    } catch (parseErr) {
+      console.error("Failed to parse JSON from GEMINI:", parseErr, "\nRaw response:", raw);
+      throw new Error("Malformed AI response, cannot parse JSON");
+    }
 
-    // Ensure recommendedTracks are unique by name and artist
+    // ensure recommendedTracks are unique
     if (Array.isArray(data.recommendedTracks)) {
       const seen = new Set();
       data.recommendedTracks = data.recommendedTracks.filter((t: any) => {
@@ -110,10 +111,13 @@ async function analyzeSongCore(artist: string, songTitle: string): Promise<Omit<
       }).slice(0, 5);
     }
 
-    return data
-  })
-
-  return result
+    //AI RESPONSE
+    console.log(data)
+    return data;
+  } catch (err) {
+    console.error("Error in Analyze Song Core:", err);
+    throw err; 
+  }
 }
 
 // Main

@@ -5,7 +5,7 @@ import { toast } from "sonner";
 
 const cache = new Map<string, AnalysisResult>();
 
-export async function analyzeMood(artist: string, songTitle: string, spotifyToken?: string, retries = 1): Promise<AnalysisResult> {
+export async function analyzeMood(artist: string, songTitle: string, spotifyToken?: string): Promise<AnalysisResult> {
   const key = `${artist}:${songTitle}`;
 
   if (cache.has(key)) {
@@ -16,17 +16,16 @@ export async function analyzeMood(artist: string, songTitle: string, spotifyToke
     const res = await axios.post("/api/result_server/analyzeMood", { artist, songTitle, spotifyToken });
     const data = res.data as AnalysisResult
     cache.set(key, data)
-    return res.data;
+    return data;
 
   } catch (error: any){
-    if (error.response?.status === 503 && retries > 0) {
-      toast.warning("AI server is busy. Retrying in 5 seconds...");
-      await new Promise((r) => setTimeout(r, 5000));
-      return analyzeMood(artist, songTitle, spotifyToken, retries - 1);
+    if (error.response?.status === 503) {
+      toast.warning("AI server is busy. Please try again later.");
+      throw new Error("AI server is busy. Please try again later.");
     }
     if (error.response?.status === 429) {
       toast.error("Rate limit exceeded. Please wait before trying again.");
-      return new Promise(() => {});
+      throw new Error("Rate limit exceeded. Please try again later.");
     }
 
     console.error("Error analyzing mood:", error);

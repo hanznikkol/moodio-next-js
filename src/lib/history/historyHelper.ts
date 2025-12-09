@@ -1,5 +1,5 @@
 import axios from "axios";
-import { MergedHistoryItem, HistoryItem } from "./historyTypes";
+import { MergedHistoryItem, HistoryItem, SongHistoryRow } from "./historyTypes";
 import { supabase } from "../supabase/supabaseClient";
 
 //Fetch History
@@ -42,7 +42,7 @@ export const mergeHistoryBySong = ( history: (HistoryItem | MergedHistoryItem)[]
         existing.latestTime = item.created_at;
       }
     } else {
-      map.set(key, { ...item, key, count: 1, latestTime: item.created_at ?? new Date().toISOString()});
+      map.set(key, { ...item, key, count: 1, latestTime: item.created_at ?? new Date().toISOString(),  is_archived: 'is_archived' in item ? item.is_archived : false });
     }
   }
 
@@ -58,72 +58,192 @@ export const updateFavorite = async (userId: string, analyses_id: string, isFavo
   if (error) throw error;
 }
 
+export const fetchArchivedHistory = async (userId: string): Promise<MergedHistoryItem[]> => {
+  const res = await fetch(`/api/database_server/get_archived?userId=${userId}`);
+  const data = await res.json();
+
+  if (!Array.isArray(data)) {
+    console.error("Expected array but got:", data);
+    return [];
+  }
+
+  return data;
+}
+
+export const archiveItem = async (supabaseUserId: string, analyses_id: string, archive: boolean = true) => {
+  const {error: errorArchive} = await supabase
+    .from("song_history")
+    .update({is_archived: archive})
+    .eq("analyses_id", analyses_id)
+    .eq("user_id", supabaseUserId)
+
+  if (errorArchive) return
+  return true
+}
+
+export const deleteHistoryItem = async (supabaseUserId: string, analyses_id: string) => {
+  const { data: analysis, error: analysisError } = await supabase
+    .from("analyses")
+    .select("song_id")
+    .eq("analyses_id", analyses_id)
+    .eq("user_id", supabaseUserId)
+    .single();
+  if (analysisError || !analysis) return;
+  
+  const songId = analysis.song_id;
+
+  await supabase
+    .from("recommended_tracks")
+    .delete()
+    .eq("analyses_id", analyses_id);
+
+  await supabase
+    .from("song_history")
+    .delete()
+    .eq("analyses_id", analyses_id)
+    .eq("user_id", supabaseUserId);
+
+  await supabase
+    .from("analyses")
+    .delete()
+    .eq("analyses_id", analyses_id)
+    .eq("user_id", supabaseUserId); 
+
+  const { data: remainingAnalyses } = await supabase
+    .from("analyses")
+    .select("analyses_id")
+    .eq("song_id", songId);
+  
+  if (!remainingAnalyses || remainingAnalyses.length === 0) {
+    await supabase
+      .from("songs")
+      .delete()
+      .eq("song_id", songId);
+  }
+
+  return true
+}
+
 //REALTIME 
 export const subscribeToRealtimeHistory = (
-  supabaseUserId: string, 
+  supabaseUserId: string,
   updater: React.Dispatch<React.SetStateAction<MergedHistoryItem[]>>,
   cache?: React.MutableRefObject<MergedHistoryItem[] | null>
-  ) => {
+) => {
+  
+  const handleUpdate = (newState: MergedHistoryItem[]) => {
+    if (cache) cache.current = newState;
+    return newState;
+  };
+
   const channel = supabase
-    .channel("realtime-analyses")
-    .on( "postgres_changes" , 
+    .channel("realtime-history")
+    .on("postgres_changes",
       {
         event: "*",
         schema: "public",
-        table: "analyses",
+        table: "song_history",
         filter: `user_id=eq.${supabaseUserId}`
-      }, async (payload) => {
-        
-        const handleUpdate = (newState: MergedHistoryItem[]) => {
-          if(cache) cache.current = newState
-          return newState
-        }
-
-        //Insert
+      },
+      async (payload) => {
+        const row = payload.new as SongHistoryRow;
+        // INSERT
         if (payload.eventType === "INSERT") {
+           const { data: analysis } = await supabase
+            .from("analyses")
+            .select("mood, created_at, song_id")
+            .eq("analyses_id", row.analyses_id)
+            .single();
+
+          if (!analysis) return;
+
           const { data: song } = await supabase
             .from("songs")
             .select("name, artist")
-            .eq("song_id", payload.new.song_id)
+            .eq("song_id", analysis.song_id)
             .single();
+
           if (!song) return;
 
-          const newItem = {
-            analyses_id: payload.new.analyses_id,
-            created_at: payload.new.created_at,
-            mood: payload.new.mood,
+          const newItem: MergedHistoryItem = {
+            analyses_id: row.analyses_id,
+            created_at: analysis.created_at,
+            latestTime: analysis.created_at,
+            mood: analysis.mood,
             track_name: song.name,
             songs: { name: song.name, artist: song.artist },
-            latestTime: payload.new.created_at,
-            is_favorite: false,
+            is_favorite: row.is_favorite ?? false,
+            is_archived: row.is_archived ?? false,
             count: 1,
-            key: `${song.name}-${song.artist}-${payload.new.mood}`
+            key: `${song.name}-${song.artist}-${analysis.mood}`,
           };
-          updater((prev) => handleUpdate(mergeHistoryBySong([newItem, ...prev])));
+
+          updater(prev => handleUpdate(mergeHistoryBySong([newItem, ...prev])));
         }
 
-        //Update
+        // UPDATE
         if (payload.eventType === "UPDATE") {
-          updater((prev) =>
-            handleUpdate(  
-              mergeHistoryBySong(
-                prev.map((item) =>
-                  item.analyses_id === payload.new.analyses_id
-                    ? { ...item, mood: payload.new.mood, created_at: payload.new.created_at, latestTime: payload.new.created_at }
-                    : item
-                )
+          const row = payload.new as SongHistoryRow;
+          const oldRow = payload.old as SongHistoryRow;
+          const { analyses_id, is_archived, is_favorite } = row;
+
+          const wasRestored = oldRow?.is_archived === true && row.is_archived === false;
+
+          if (wasRestored) {
+            // Fetch analysis details
+            const { data: analysis } = await supabase
+              .from("analyses")
+              .select("mood, created_at, song_id")
+              .eq("analyses_id", analyses_id)
+              .single();
+            if (!analysis) return;
+
+            // Fetch song details
+            const { data: song } = await supabase
+              .from("songs")
+              .select("name, artist")
+              .eq("song_id", analysis.song_id)
+              .single();
+            if (!song) return;
+
+            const newItem: MergedHistoryItem = {
+              analyses_id,
+              mood: analysis.mood,
+              created_at: analysis.created_at,
+              latestTime: analysis.created_at,
+              track_name: song.name,
+              songs: { name: song.name, artist: song.artist },
+              is_favorite: is_favorite ?? false,
+              is_archived: false,
+              count: 1,
+              key: `${song.name}-${song.artist}-${analysis.mood}`,
+            };
+
+            updater(prev => {
+              const combined = [...prev, newItem];
+                    combined.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+              return handleUpdate(mergeHistoryBySong(combined));
+            });
+            return;
+          }
+
+          // Otherwise, normal update
+          updater(prev => {
+            const updated = prev
+              .map(i =>
+                i.analyses_id === analyses_id
+                  ? { ...i, is_archived, is_favorite }
+                  : i
               )
-            )
-          );
+              .filter(i => !i.is_archived);
+
+            return handleUpdate(mergeHistoryBySong(updated));
+          });
         }
 
-        if (payload.eventType === "DELETE") {
-          updater((prev) =>
-            handleUpdate(mergeHistoryBySong(prev.filter((item) => item.analyses_id !== payload.old.analyses_id)))
-          );
-        }
-      })
-    .subscribe()
+      }
+    )
+    .subscribe();
 
-    return () => supabase.removeChannel(channel)
-}
+  return () => supabase.removeChannel(channel);
+};

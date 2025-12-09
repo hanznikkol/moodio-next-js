@@ -1,6 +1,6 @@
 import LoadingSpinner from '@/app/main_components/LoadingSpinner';
 import { MergedHistoryItem } from '@/lib/history/historyTypes'
-import { Star, Trash } from 'lucide-react';
+import { ArchiveRestore, Star, Trash } from 'lucide-react';
 import React, { memo } from 'react'
 
 interface HistoryItemProps {
@@ -8,9 +8,27 @@ interface HistoryItemProps {
     loadingItemId: string | null
     onClick: (item: MergedHistoryItem) => void;
     onDelete?: (item: MergedHistoryItem) => void;
+    onArchive?: (item: MergedHistoryItem) => void;
     onFavorite?: (item: MergedHistoryItem, newValue: boolean) => void
+    onRestore?: (item: MergedHistoryItem) => void
+    showFavorite?: boolean
+    showArchive?: boolean
+    showRestore?: boolean
+    showDelete?: boolean
 }
-function HistoryItem({item, loadingItemId, onClick, onDelete, onFavorite} : HistoryItemProps) {
+function HistoryItem({
+    item, 
+    loadingItemId, 
+    onClick, 
+    onDelete, 
+    onArchive, 
+    onFavorite, 
+    onRestore, 
+    showFavorite = true, 
+    showArchive= true, 
+    showRestore = false, 
+    showDelete = false
+} : HistoryItemProps) {
 
   return (
     <li 
@@ -32,29 +50,54 @@ function HistoryItem({item, loadingItemId, onClick, onDelete, onFavorite} : Hist
                 {loadingItemId === item.analyses_id && <LoadingSpinner color="border-cyan-400" size="small" />}
 
                 {/* Favorites */}
-                <Star
+                {showFavorite && onFavorite && (
+                    <Star
                     className={`w-5 h-5 cursor-pointer transition-opacity opacity-100
                         ${item.is_favorite ? 'stroke-yellow-400 fill-yellow-400' : ' stroke-yellow-400 fill-none hover:fill-yellow-400'}    
                     `}
                     onClick={(e) => {
                         e.stopPropagation();
-                        onFavorite?.(item, !item.is_favorite)
+                        onFavorite(item, !item.is_favorite);
                     }}
-                />
+                    />
+                )}
 
-                <Trash
+                {showArchive && onArchive && (
+                    <Trash
                     className="w-5 h-5 cursor-pointer transition-opacity opacity-100 stroke-red-500 hover:fill-red-500"
                     onClick={(e) => {
                         e.stopPropagation();
-                        onDelete?.(item);
+                        onArchive(item);
                     }}
-                />
+                    />
+                )}
+
+                {showRestore && item.is_archived && onRestore && (
+                    <ArchiveRestore
+                    className="w-5 h-5 cursor-pointer stroke-green-500 hover:fill-green-500 transition-colors"
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        onRestore(item);
+                    }}
+                    />
+                )}
+
+                
+                {showDelete && onDelete && (
+                    <Trash
+                    className="w-5 h-5 cursor-pointer stroke-red-500 hover:fill-red-500"
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        onDelete(item);
+                    }}
+                    />
+                )}
             </div>
             
         </div>
         {/* Date */}
         <p className="text-xs text-gray-400">
-            Latest: {new Date(item.latestTime).toLocaleTimeString()}
+            Latest: {item.created_at ? new Date(item.created_at).toLocaleTimeString() : "N/A"}
         </p>
     </li>
   )

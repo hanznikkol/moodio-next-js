@@ -1,32 +1,32 @@
 'use client'
 
 import { History, RefreshCw } from "lucide-react";
-import React, { useEffect, useState, useRef, useMemo, useCallback } from "react";
+import React, { useState, useRef, useMemo, useCallback, useEffect } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { useSpotify } from "@/lib/spotifyLib/context/spotifyContext";
-import { HistoryItem, MergedHistoryItem } from "@/lib/history/historyTypes";
+import { MergedHistoryItem } from "@/lib/history/historyTypes";
 import LoadingSpinner from "@/app/main_components/LoadingSpinner";
 import { AnalysisResult } from "@/lib/analysisMoodLib/analysisResult";
-import { fetchAnalysisById, fetchHistoryBySpotifyId, mergeHistoryBySong, subscribeToRealtimeHistory, updateFavorite } from "@/lib/history/historyHelper";
+import { archiveItem, fetchAnalysisById, fetchHistoryBySpotifyId, mergeHistoryBySong, subscribeToRealtimeHistory, updateFavorite } from "@/lib/history/historyHelper";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import HistoryItemComponent from "./HistoryItemComponent";
-import axios from "axios";
-import { supabase } from "@/lib/supabase/supabaseClient";
 
 interface HistorySheetProps {
   supabaseUserId: string
   onSelectHistory: (analysis: AnalysisResult) => void
+  onRestoreItem?: (item: MergedHistoryItem) => void; 
 }
 
 export default function HistorySheet({ supabaseUserId, onSelectHistory }: HistorySheetProps) {
+  const { profile } = useSpotify();
+
   const historyCache = useRef<MergedHistoryItem[] | null>(null);
   const analysesCache = useRef<Record<string, AnalysisResult>>({});
   const realtimeUnsubscribe = useRef<(() => void) | null>(null);
   const favoriteLock = useRef<Set<string>>(new Set())
 
-  const { profile } = useSpotify();
   const [searchQuery, setSearchQuery] = useState("")
   const [history, setHistory] = useState<MergedHistoryItem[]>(historyCache.current ?? []);
   const [loading, setLoading] = useState(false);
@@ -65,8 +65,22 @@ export default function HistorySheet({ supabaseUserId, onSelectHistory }: Histor
     }
   }
 
-  const handleDelete = (item: MergedHistoryItem) => {
-    setHistory(prev => prev.filter(h => h.analyses_id !== item.analyses_id))
+  const handleArchive = async (item: MergedHistoryItem, archive: boolean = true) => {
+    if (!supabaseUserId) return
+    setHistory(prev => {
+      const newState = prev.filter(h => h.analyses_id !== item.analyses_id);
+      historyCache.current = newState;
+      return newState;
+    });
+
+    try {
+      await archiveItem(supabaseUserId, item.analyses_id, archive)
+      toast.success(archive ? "Archived Successfully" : "Restored successfully")
+    } catch (err) {
+      console.error("Failed to delete")
+      toast.error("Failed to delete");
+      setHistory(prev => [...prev, item]);
+    }
   }
 
   const handleOpenSheet = async () => {
@@ -102,9 +116,7 @@ export default function HistorySheet({ supabaseUserId, onSelectHistory }: Histor
     setRefreshing(true);
     try {
       const fetchedHistory = await fetchHistoryBySpotifyId(profile.id);
-      setHistoryAndCache(
-        mergeHistoryBySong([...(historyCache.current || []), ...fetchedHistory])
-      );
+      setHistoryAndCache( mergeHistoryBySong([...(historyCache.current || []), ...fetchedHistory]));
     } catch (err) {
       toast.error("Failed refresh");
     } finally {
@@ -219,8 +231,9 @@ export default function HistorySheet({ supabaseUserId, onSelectHistory }: Histor
                         item={item}
                         loadingItemId={loadingItemId}
                         onClick={handleClickItem}
-                        onDelete={handleDelete}
+                        onArchive={handleArchive}
                         onFavorite={handleFavorites}
+                        showRestore={false}  
                       />
                     ))}
                   </ul>
@@ -241,8 +254,9 @@ export default function HistorySheet({ supabaseUserId, onSelectHistory }: Histor
                         item = {item}
                         loadingItemId = {loadingItemId}
                         onClick = {handleClickItem}
-                        onDelete={handleDelete}
+                        onArchive={handleArchive}
                         onFavorite={handleFavorites}
+                        showRestore={false}
                       />
                     ))}
                   </ul>

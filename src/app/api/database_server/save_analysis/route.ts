@@ -30,6 +30,7 @@ export async function POST(req: NextRequest) {
       }, {onConflict: "spotify_id"})
       .select("song_id")
       .single();
+    console.log("Song upsert response:", { data: song, error: songError });
     if (songError) throw songError;
 
     // Save analysis
@@ -40,11 +41,12 @@ export async function POST(req: NextRequest) {
         song_id: song.song_id,
         mood: analysisResult.mood,
         explanation: analysisResult.explanation,
-        color_palette: analysisResult.colorPalette,
+        color_palette: JSON.parse(JSON.stringify(analysisResult.colorPalette)),
         lyrics: analysisResult.lyrics ?? null,
       })
       .select("analyses_id")
       .single();
+    console.log("Analysis result from AI:", analysisResult);
     if (analysisError) throw analysisError;
 
     // Save recommended tracks
@@ -53,7 +55,7 @@ export async function POST(req: NextRequest) {
         analyses_id: analysis.analyses_id,
         name: r.name,
         artists: Array.isArray(r.artist) ? r.artist.filter(Boolean).join(", ") : r.artist ?? "Unknown Artist",
-        note: r.note ?? null,
+        note: r.note ? String(r.note) : null,
         image: r.image ?? null,
         uri: r.uri ?? null,
       }));
@@ -65,18 +67,20 @@ export async function POST(req: NextRequest) {
     }
 
     // Save to song_history
-    const { error: historyError } = await supabaseClientJWT
+    const { data: songHistory, error: historyError } = await supabaseClientJWT
       .from("song_history")
       .upsert({
         user_id: user.id,
         analyses_id: analysis.analyses_id,
-        is_favorite: false,        
+        is_favorite: false,
+        is_archived: false,        
         count: 1, 
-      }, { onConflict: "unique_user_analysis" });
+      }, { onConflict: "user_id, analyses_id"});
 
+    console.log("Song history insert", songHistory)
     if (historyError) throw historyError;
 
-
+    
     return NextResponse.json({ saved: analysis });
     
     
