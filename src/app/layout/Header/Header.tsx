@@ -16,27 +16,40 @@ import { ConfirmDialog } from '@/app/main_components/Buttons/ConfirmDialog';
 export default function Header() {
   const { profile, userId } = useSpotify();
   const { setSelectedAnalysis, setShowResults, setSelectedTrackID, setCurrentTrack, setMoodAnalysis, setShowPrompt } = useMood();
+  const [loading, setLoading] = useState(false)
   const [archivedModalOpen, setArchivedModalOpen] = useState(false);
+  const [archivedItems, setArchivedItems] = useState<MergedHistoryItem[]>([])
+  const [archiveFilterDate, setArchiveFilterDate] = useState<Date | null>(null);
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
   const [confirmRestoreOpen, setConfirmRestoreOpen] = useState(false);
   const [itemToConfirm, setItemToConfirm] = useState<MergedHistoryItem | null>(null)
   const [historyItems, setHistoryItems] = useState<MergedHistoryItem[]>([]);
+  
+  const handleOpenArchive = async () => {
+    setArchivedModalOpen(true);
 
-  useEffect(() => {
     if (!userId) return;
 
-    const loadArchived = async () => {
-      try {
-        const archived = await fetchArchivedHistory(userId);
-        setHistoryItems(archived);
-      } catch (err) {
-        console.error("Failed to fetch archived items", err);
-      }
+    setLoading(true)
+    try {
+      const archived = await fetchArchivedHistory(userId);
+      setArchivedItems(archived);
+    } catch (err) {
+      console.error("Failed to fetch archived items:", err);
+    } finally{
+      setLoading(false)
     }
+  };
 
-    loadArchived();
-  }, [userId, archivedModalOpen]);
   
+  const filteredArchivedItems = useMemo(() => 
+    archivedItems.filter(item => {
+      if (!archiveFilterDate) return true;
+      return new Date(item.created_at) <= archiveFilterDate;
+    }),
+    [archivedItems, archiveFilterDate]
+  );
+
   const handleDeleteClick = (item: MergedHistoryItem) => {
     setItemToConfirm(item);
     setConfirmDeleteOpen(true);
@@ -53,6 +66,7 @@ export default function Header() {
     try {
       await archiveItem(userId, itemToConfirm.analyses_id, false);
       setHistoryItems(prev => prev.map(h => h.analyses_id === itemToConfirm.analyses_id ? { ...h, is_archived: false } : h));
+      setArchivedItems(prev => prev.filter(h => h.analyses_id !== itemToConfirm.analyses_id));
     } catch(err) {
         console.error("Failed to restore archived item:", err);
     } finally {
@@ -67,6 +81,7 @@ export default function Header() {
     try {
       await deleteHistoryItem(userId, itemToConfirm.analyses_id);
       setHistoryItems(prev => prev.filter(h => h.analyses_id !== itemToConfirm.analyses_id));
+      setArchivedItems(prev => prev.filter(h => h.analyses_id !== itemToConfirm.analyses_id));
     } catch (err) {
       console.error("Failed to delete item permanently:", err);
     } finally {
@@ -74,8 +89,6 @@ export default function Header() {
       setItemToConfirm(null);
     }
   };
-  
-  const archivedItems = historyItems.filter(item => item.is_archived)
 
   return (
   <>
@@ -106,7 +119,7 @@ export default function Header() {
         <ThemeToggleButton />
 
         {/* Profile */}
-        {profile && <ProfileMenu archivedCount={archivedItems.length} onOpenArchived={() => setArchivedModalOpen(true)}/>}
+        {profile && <ProfileMenu archivedCount={archivedItems.length} onOpenArchived={handleOpenArchive}/>}
 
         {/* Github */}
         <a target="_blank" rel="noopener noreferrer" href="https://github.com/hanznikkol/moodio-next-js" className="hover:scale-110 duration-100 hover:cursor-pointer">
@@ -119,10 +132,11 @@ export default function Header() {
     <ArchiveList
         open={archivedModalOpen}
         onOpenChange={setArchivedModalOpen}
-        archivedItems={archivedItems}
+        archivedItems={filteredArchivedItems}
         onRestore={handleRestoreClick}
         onDeletePermanently={handleDeleteClick}
         onClickItem={() => {}}
+        loading={loading}
     />
 
     <ConfirmDialog
