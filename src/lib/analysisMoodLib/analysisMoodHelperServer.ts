@@ -64,7 +64,7 @@ async function analyzeSongCore(artist: string, songTitle: string): Promise<Omit<
     }
 
     Rules:
-    - Return ONLY valid JSON, no extra text.
+    - Output ONLY valid JSON. No narration, no explanations, no chain-of-thought, no extra text..
     - Mood must be **2 descriptive and type of mood words**
     - Also include meaning and history of the song and the reason of the mood in "explanation" in 200 max characters.
     - Consider **similar genre, tempo, mood, lyrical theme, or instrumentation**.
@@ -81,7 +81,7 @@ async function analyzeSongCore(artist: string, songTitle: string): Promise<Omit<
     const response = await ai.models.generateContent({
       model: "gemini-2.5-flash",
       contents: [prompt],
-      config: { maxOutputTokens: 2500, temperature: 0.7 }
+      config: { maxOutputTokens: 3000, temperature: 0.7 }
     });
 
     const raw = response.candidates?.[0]?.content?.parts?.[0]?.text?.trim();

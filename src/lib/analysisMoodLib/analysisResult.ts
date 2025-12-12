@@ -17,6 +17,8 @@ export type AnalysisResult = {
   trackArtist: string
 }    
 
+export type AnalysisResponse = AnalysisResult & { remainingCredits?: number }
+
 export type PlaybackState = {
   selectedTrackID: string | null;
   currentTrack: { name: string; artists: string } | null;

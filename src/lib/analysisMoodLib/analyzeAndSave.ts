@@ -1,14 +1,15 @@
 import axios from "axios";
 import { getUserProfile } from "../spotifyLib/spotifyHelper";
 import { analyzeMood } from "./analysisMoodHelper";
-import { AnalysisResult } from "./analysisResult";
+import { AnalysisResponse } from "./analysisResult";
 import { SpotifyTrack } from "../spotifyLib/spotifyTypes";
+import { toast } from "sonner";
 
 export async function analyzeAndSaveTrack(  
   track: SpotifyTrack,
   spotifyToken: string,
   supabaseJWT: string | null
-): Promise<AnalysisResult | null> {
+): Promise<AnalysisResponse | null> {
     const artistName = track.artists[0]?.name ?? "Unknown Artist";
 
     //Analyze Mood
@@ -35,8 +36,10 @@ export async function analyzeAndSaveTrack(
             }
           })
         }
-    } catch (err) {
-        console.error("Error saving analysis:", err);
+    } catch (err: any) {
+        console.log(err.message || "Could not analyze song.")
+        toast.error(err.message || "Could not analyze song.");
+        return null;
     }
     return result
 }

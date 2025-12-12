@@ -3,6 +3,24 @@ import { SpotifyTrack, SpotifyUserProfile } from "./spotifyTypes";
 import { toast } from "sonner";
 import { supabase } from "../supabase/supabaseClient";
 
+export async function signInWithSpotify() {
+  try {
+    const {data, error} = await supabase.auth.signInWithOAuth({
+      provider: "spotify",
+      options: {
+        scopes: "user-read-private user-read-playback-state user-read-currently-playing user-top-read",
+        redirectTo: process.env.NEXT_PUBLIC_BASE_URL!,
+      }
+    })
+    if (error) throw error;
+    return data;
+  } catch (error: any) {
+    console.log("Spotify login error", error)
+    toast.error(`Failed to start Spotify login: ${error.message ?? error}`);
+    return null;
+  } 
+}
+
 // SAVE USER PROFILE
 export const upsertUser = async(profile: SpotifyUserProfile) => {
   try {

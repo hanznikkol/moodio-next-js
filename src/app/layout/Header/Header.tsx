@@ -10,7 +10,7 @@ import HistorySheet from './HeaderItems/History/HistorySheet';
 import { useMood } from '@/lib/history/context/moodHistoryContext';
 import ArchiveList from './HeaderItems/History/ArchiveList';
 import { MergedHistoryItem } from '@/lib/history/historyTypes';
-import { archiveItem, deleteHistoryItem, fetchArchivedHistory, fetchHistoryBySpotifyId } from '@/lib/history/historyHelper';
+import { archiveItem, deleteHistoryItem, fetchArchivedHistory } from '@/lib/history/historyHelper';
 import { ConfirmDialog } from '@/app/main_components/Buttons/ConfirmDialog';
 
 export default function Header() {

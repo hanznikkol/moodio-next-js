@@ -5,17 +5,18 @@ import { toast } from "sonner";
 
 const cache = new Map<string, AnalysisResult>();
 
-export async function analyzeMood(artist: string, songTitle: string, spotifyToken?: string): Promise<AnalysisResult> {
+export async function analyzeMood(artist: string, songTitle: string, spotifyToken?: string): Promise<AnalysisResult & { remainingCredits?: number }> {
   const key = `${artist}:${songTitle}`;
 
   if (cache.has(key)) {
-    return cache.get(key)!;
+    const cachedAnalysis = cache.get(key)!;
+    return { ...cachedAnalysis }; // remainingCredits will be fetched from API
   }
   
   try {
     const res = await axios.post("/api/result_server/analyzeMood", { artist, songTitle, spotifyToken });
-    const data = res.data as AnalysisResult
-    cache.set(key, data)
+    const data = res.data as AnalysisResult & { remainingCredits?: number };
+    cache.set(key, { ...data });
     return data;
 
   } catch (error: any){
@@ -24,8 +25,8 @@ export async function analyzeMood(artist: string, songTitle: string, spotifyToke
       throw new Error("AI server is busy. Please try again later.");
     }
     if (error.response?.status === 429) {
-      toast.error("Rate limit exceeded. Please wait before trying again.");
-      throw new Error("Rate limit exceeded. Please try again later.");
+      toast.error(error.response.data?.error || "Daily credit limit reached.");
+      return { remainingCredits: error.response.data?.remainingCredits ?? 0 } as any;
     }
 
     console.error("Error analyzing mood:", error);

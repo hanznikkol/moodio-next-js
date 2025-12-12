@@ -5,15 +5,15 @@ import { toast } from "sonner";
 import type { AnalysisResult } from "@/lib/analysisMoodLib/analysisResult";
 import LoadingSpinner from "./main_components/LoadingSpinner";
 import HeroHeader from "./main_components/HeroHeader";
-import { getCurrentTrack } from "@/lib/spotifyLib/spotifyHelper";
+import { getCurrentTrack, signInWithSpotify } from "@/lib/spotifyLib/spotifyHelper";
 import { useSpotify } from "@/lib/spotifyLib/context/spotifyContext";
 import MoodResult from "./main_components/Result/MoodResult";
 import PlayPromptButton from "./main_components/Buttons/PlayPromptButton";
 import { useMood } from "@/lib/history/context/moodHistoryContext";
-import { supabase } from "@/lib/supabase/supabaseClient";
 import { analyzeAndSaveTrack } from "@/lib/analysisMoodLib/analyzeAndSave";
 
 export default function Home() {
+  const maxDailyCredits = 2
   const {spotifyToken, connecting, setConnecting , setShowPrompt, supabaseJWT } = useSpotify();
   const {selectedAnalysis, setSelectedAnalysis, showResults, setShowResults } = useMood();
 
@@ -22,30 +22,44 @@ export default function Home() {
   const [moodAnalysis, setMoodAnalysis] = useState<AnalysisResult | null>(null);
   const [currentTrack, setCurrentTrack] = useState<{ name: string; artists: string } | null>(null);
   const [isPolling, setIsPolling] = useState(false);
-  const manualStopRef = useRef(false)
+  const [credits, setCredits] = useState(0);
 
+  const manualStopRef = useRef(false)
   const analyzedTracks = useRef<Set<string>>(new Set());
   const pollingRef = useRef<NodeJS.Timeout | null>(null);
   const isAnalyzingRef = useRef(false);
 
-  const handleSpotifyClick = async () => {
-    const { data, error } = await supabase.auth.signInWithOAuth({
-      provider: 'spotify',
-      options: {
-        scopes: 'user-read-private user-read-playback-state user-read-currently-playing user-top-read',
-        redirectTo: process.env.NEXT_PUBLIC_BASE_URL!
-      }
-    })
+  //Fetch user credits
+  useEffect(() => {
+    if (!supabaseJWT) return; 
 
-    if (error) {
-      toast.error('Failed to start Spotify login!')
-      console.error(error)
-      return
-    }
-    setConnecting(true)
+    const fetchCredits = async () => {
+      try {
+        const res = await fetch("/api/credits", { 
+          method: "POST", 
+          body: JSON.stringify({ userId: supabaseJWT }),
+          headers: { "Content-Type": "application/json" }
+        });
+        const data = await res.json();
+        setCredits(data.credits ?? maxDailyCredits);
+      } catch (err) {
+        console.error("Failed to fetch credits:", err);
+        setCredits(maxDailyCredits);
+      }
+    };
+
+    fetchCredits();
+  }, [supabaseJWT]);
+
+  //Connect to Spotify
+  const handleSpotifyClick = async () => {
+    const data = await signInWithSpotify();
+    if (!data) return
+
+    setConnecting(true);
     manualStopRef.current = true;
     setShowPrompt(false);
-  }
+  };
   
   // Clear state when needed 
   const resetPlayback = useCallback(() => {
@@ -56,13 +70,12 @@ export default function Home() {
     setSelectedTrackID(null);
     setCurrentTrack(null);
     setMoodAnalysis(null);
-      setShowPrompt(true);
+    setShowPrompt(true);
     // Reset mood history selection
     setSelectedAnalysis(null);
     setShowResults(false);
   }, [setShowPrompt, setSelectedAnalysis, setShowResults]);
 
-  
   const stopPolling = useCallback(() => {
     if(pollingRef.current) {
       clearInterval(pollingRef.current)
@@ -106,8 +119,13 @@ export default function Home() {
     isAnalyzingRef.current = true;
     setLoading(true);
 
+    //Analyze and Save
     try {
      const result = await analyzeAndSaveTrack(track, spotifyToken, supabaseJWT);
+
+      if (result && result.remainingCredits !== undefined) {
+        setCredits(result.remainingCredits);
+      }
 
       setMoodAnalysis(result);
       setShowResults(true);
@@ -135,6 +153,7 @@ export default function Home() {
   }, [checkPlayback])
 
 
+  //Click another song
   const handleAnalyzeAnotherSong = () => {
     resetPlayback()
     startPolling()
@@ -164,6 +183,8 @@ export default function Home() {
       setShowPrompt(false);
     }
   }, [selectedAnalysis, setShowPrompt]);
+
+
 
   return (
     <div className="flex flex-col items-center p-8 w-full gap-6">
@@ -213,6 +234,12 @@ export default function Home() {
       {/* Analyze another song */}
       {spotifyToken && !loading && (moodAnalysis || selectedAnalysis) && (
         <SpotifyButton label="Analyze another song" onClick={handleAnalyzeAnotherSong} />
+      )}
+
+      {spotifyToken && (
+        <>
+          <p className="text-sm text-gray-400 text-center">Credits today: {credits} / {maxDailyCredits} </p>
+        </>
       )}
       
     </div>
