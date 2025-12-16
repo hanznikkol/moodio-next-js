@@ -65,23 +65,25 @@ async function analyzeSongCore(artist: string, songTitle: string): Promise<Omit<
 
     Rules:
     - Return ONLY valid JSON, no extra text.
-    - Mood must be **2 descriptive and type of mood words**
-    - Also include meaning and history of the song and the reason of the mood in "explanation" in 200 max characters.
+    - Mood: exactly 2 descriptive words
+    - Explanation: max 200 characters, single line, include meaning, history, and reason for mood.
     - Consider **similar genre, tempo, mood, lyrical theme, or instrumentation**.
     - Return exactly 5 (max) tracks that are **musically or emotionally related** to this song.
     - Use double quotes for all strings.
     - For the "note" field in recommendedTracks, write a short note explaining **why it relates and is recommended** to the main track.
-    - colorPalette must be in Hex code.
+    - colorPalette must be in 4 Hex code and must be returned as a single-line array like ["#FFFFFF","#000000","#FF0000",...]
     - If a field is unavailable, return null.
     - Do NOT use double quotes inside string values. If needed, use single quotes or escape them.
+    - recommendedTracks.notes must be ≤ 150 characters and a single line.
     - All string values must be on a single line. Do not insert line breaks inside quotes.
+    - All string values and arrays must be on a single line. Do not insert line breaks inside quotes or array brackets
   `;
 
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: "gemini-2.5-flash-lite",
       contents: [prompt],
-      config: { maxOutputTokens: 3000, temperature: 0.7 }
+      config: { maxOutputTokens: 2000, temperature: 0.7 }
     });
 
     const raw = response.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
