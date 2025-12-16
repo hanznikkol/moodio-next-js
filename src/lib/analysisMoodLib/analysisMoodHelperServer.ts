@@ -81,7 +81,7 @@ async function analyzeSongCore(artist: string, songTitle: string): Promise<Omit<
     const response = await ai.models.generateContent({
       model: "gemini-2.5-flash",
       contents: [prompt],
-      config: { maxOutputTokens: 2500, temperature: 0.7 }
+      config: { maxOutputTokens: 3000, temperature: 0.7 }
     });
 
     const raw = response.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
