@@ -50,6 +50,7 @@ async function searchSpotifyTrack(
 
 //Core analyze
 async function analyzeSongCore(artist: string, songTitle: string): Promise<Omit<AnalysisResult, "lyrics">> {
+  //Prompt for AI
   const prompt = `
     Analyze the song "${songTitle}" by "${artist}".
     Return JSON following this schema:
@@ -80,6 +81,7 @@ async function analyzeSongCore(artist: string, songTitle: string): Promise<Omit<
   `;
 
   try {
+    //== GEMINI AI RESPONSE ==
     const response = await ai.models.generateContent({
       model: "gemini-2.5-flash-lite",
       contents: [prompt],
@@ -88,7 +90,7 @@ async function analyzeSongCore(artist: string, songTitle: string): Promise<Omit<
 
     const raw = response.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
     if (!raw) throw new Error("No AI response for song analysis");
-    console.log(raw)
+    // console.log(raw)
 
     // clean the raw text
     const jsonText = raw.replace(/^```json\s*/i, "").replace(/^```\s*/i, "").replace(/```$/i, "").trim();
@@ -113,8 +115,7 @@ async function analyzeSongCore(artist: string, songTitle: string): Promise<Omit<
       }).slice(0, 5);
     }
 
-    //AI RESPONSE
-    console.log(data)
+    //console.log(data)
     return data;
   } catch (err) {
     console.error("Error in Analyze Song Core:", err);
