@@ -15,7 +15,7 @@ import { analyzeAndSaveTrack } from "@/lib/analysisMoodLib/analyzeAndSave";
 import { fetchUserCredits } from "@/lib/analysisMoodLib/creditsHelper";
 
 export default function Home() {
-  const {spotifyToken, connecting, setConnecting , setShowPrompt, supabaseJWT } = useSpotify();
+  const {spotifyToken, connecting, setConnecting , setShowPrompt, supabaseJWT, remainingCredits, setRemainingCredits } = useSpotify();
   const {selectedAnalysis, setSelectedAnalysis, showResults, setShowResults } = useMood();
 
   const [selectedTrackID, setSelectedTrackID] = useState<string | null>(null);
@@ -23,7 +23,7 @@ export default function Home() {
   const [moodAnalysis, setMoodAnalysis] = useState<AnalysisResult | null>(null);
   const [currentTrack, setCurrentTrack] = useState<{ name: string; artists: string } | null>(null);
   const [isPolling, setIsPolling] = useState(false);
-  const [remainingCredits, setRemainingCredits] = useState(0)
+
   const manualStopRef = useRef(false)
 
   const analyzedTracks = useRef<Set<string>>(new Set());
@@ -169,18 +169,6 @@ export default function Home() {
     }
   }, [selectedAnalysis, setShowPrompt]);
 
-  //== GET NUMBER CREDITS ==
-  useEffect(() => {
-    if(!supabaseJWT) return
-    
-    const getCredits = async () => {
-      const credits = await fetchUserCredits(supabaseJWT)
-      setRemainingCredits(credits || 0)
-    }
-
-    getCredits()
-  }, [supabaseJWT])
-
   return (
     <div className="flex flex-col items-center p-8 w-full gap-6">
       {/* Hero Header */}
@@ -231,7 +219,7 @@ export default function Home() {
         <SpotifyButton label="Analyze another song" onClick={handleAnalyzeAnotherSong} />
       )}
 
-      {spotifyToken && (
+      {spotifyToken && remainingCredits !== null && (
         remainingCredits > 0 ? (
           <div className="text-sm text-muted-foreground">
             Credits left today: <span className="font-semibold">{remainingCredits}</span>
