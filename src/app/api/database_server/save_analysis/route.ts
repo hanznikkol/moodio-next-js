@@ -1,22 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { getSupabaseClientWithJWT, getUserIdFromJWT } from "@/lib/supabase/supabaseClientHelper";
+import { DAILY_LIMIT } from "@/lib/config/creditsLimit";
 
 export async function POST(req: NextRequest) {
   try {
     const jwt = req.headers.get("Authorization")?.replace("Bearer ", "");
     if (!jwt) throw new Error("Missing JWT");
 
-    const supabaseClientJWT = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      { global: { headers: { Authorization: `Bearer ${jwt}` } } }
-    );
-
-    const { data: { user }, error } = await supabaseClientJWT.auth.getUser();
-    if (error || !user) throw new Error("No authenticated user found");
+    const supabaseClientJWT = getSupabaseClientWithJWT(jwt)
+    const userId = await getUserIdFromJWT(jwt)
+    const today = new Date().toISOString().split("T")[0]
 
     const { track, analysisResult } = await req.json();
 
+    //== Save to database ==
     // Upsert song
     const simpleArtist = Array.isArray(track.artists) ? track.artists.join(", ") : track.artists;
     const { data: song, error: songError } = await supabaseClientJWT
@@ -37,7 +35,7 @@ export async function POST(req: NextRequest) {
     const { data: analysis, error: analysisError } = await supabaseClientJWT
       .from("analyses")
       .insert({
-        user_id: user.id,
+        user_id: userId,
         song_id: song.song_id,
         mood: analysisResult.mood,
         explanation: analysisResult.explanation,
@@ -70,7 +68,7 @@ export async function POST(req: NextRequest) {
     const { data: songHistory, error: historyError } = await supabaseClientJWT
       .from("song_history")
       .upsert({
-        user_id: user.id,
+        user_id: userId,
         analyses_id: analysis.analyses_id,
         is_favorite: false,
         is_archived: false,        
@@ -79,11 +77,42 @@ export async function POST(req: NextRequest) {
 
     console.log("Song history insert", songHistory)
     if (historyError) throw historyError;
+    
+    //== Consume Credits ==
+    const {data: creditData, error: creditError} = await supabaseClientJWT
+      .from("daily_user_credits")
+      .select("used_count")
+      .eq("user_id", userId)
+      .eq("used_on", today)
+      .single()
 
-    
-    return NextResponse.json({ saved: analysis });
-    
-    
+    if (creditError && creditError.code !== "PGRST116") throw creditError
+
+    let remainingCredits: number
+    if (!creditData) {
+      await supabaseClientJWT.from("daily_user_credits").insert({
+          user_id: userId,
+          used_on: today,
+          used_count: 1,
+      });
+
+      remainingCredits = DAILY_LIMIT - 1
+    } else {
+      //Reach Limit
+      if (creditData.used_count >= DAILY_LIMIT) {
+        return NextResponse.json({error: "Daily credit limit"}, {status: 403})
+      }
+
+      await supabaseClientJWT
+        .from("daily_user_credits")
+        .update({used_count: creditData.used_count + 1})
+        .eq("user_id", userId)
+        .eq("used_on", today)
+      
+      remainingCredits = DAILY_LIMIT - (creditData.used_count + 1)
+    }
+
+    return NextResponse.json({ saved: analysis, remainingCredits});
   } catch (err: any) {
     console.error("Error in API route:", err);
     return NextResponse.json({ error: err.message || "Server error" }, { status: 500 });

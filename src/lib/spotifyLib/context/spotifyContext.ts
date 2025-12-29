@@ -6,6 +6,7 @@ import { jwtDecode } from 'jwt-decode'
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase/supabaseClient";
 import { AppJWTPayload, SpotifyContextType } from "./SpotifyContextTypes";
+import { fetchUserCredits } from "@/lib/analysisMoodLib/creditsHelper";
 
 const SpotifyContext = createContext<SpotifyContextType | undefined>(undefined);
 
@@ -18,6 +19,7 @@ export const SpotifyProvider = ({children}: {children: React.ReactNode}) => {
   const [profile, setProfile] = useState<SpotifyUserProfile | null>(null);
   const [connecting, setConnecting] = useState(false);
   const [showPrompt, setShowPrompt] = useState(false);
+  const [remainingCredits, setRemainingCredits] = useState<number | null>(null)
 
   // Reset Spotify states
   const resetAll = useCallback(() => {
@@ -104,9 +106,25 @@ export const SpotifyProvider = ({children}: {children: React.ReactNode}) => {
     userHandler()
   }, [spotifyToken]);
 
+  //== GET USER CREDIT ==
+  useEffect(() => {
+    if (!supabaseJWT) return
+
+    const loadCredits = async () => {
+      try {
+        const credits = await fetchUserCredits(supabaseJWT)
+        setRemainingCredits(credits ?? 0)
+      } catch (err: any) {
+        console.error("Failed to get number of credits",err)
+      }
+    }
+
+    loadCredits()
+  }, [supabaseJWT])
+
   return createElement(
       SpotifyContext.Provider,
-      { value: { spotifyToken, refreshToken, userId, appJWT, supabaseJWT, profile, connecting, showPrompt, setSpotifyToken, setRefreshToken, setConnecting, setShowPrompt, resetAll } },
+      { value: { remainingCredits, spotifyToken, refreshToken, userId, appJWT, supabaseJWT, profile, connecting, showPrompt, setRemainingCredits, setSpotifyToken, setRefreshToken, setConnecting, setShowPrompt, resetAll } },
       children
   );
 }

@@ -1,6 +1,8 @@
+import { Dispatch, SetStateAction } from "react";
 import { SpotifyUserProfile } from "../spotifyTypes";
 
 export interface SpotifyContextType {
+  remainingCredits: number | null
   spotifyToken: string | null;
   refreshToken: string | null;
   userId: string | null;
@@ -9,6 +11,7 @@ export interface SpotifyContextType {
   profile: SpotifyUserProfile | null;
   connecting: boolean;
   showPrompt: boolean;
+  setRemainingCredits: Dispatch<SetStateAction<number | null>>
   setSpotifyToken: (token: string | null) => void;
   setRefreshToken: (token: string | null) => void;
   setConnecting: (state: boolean) => void;

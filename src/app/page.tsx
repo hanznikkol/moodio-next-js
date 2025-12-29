@@ -12,9 +12,10 @@ import PlayPromptButton from "./main_components/Buttons/PlayPromptButton";
 import { useMood } from "@/lib/history/context/moodHistoryContext";
 import { supabase } from "@/lib/supabase/supabaseClient";
 import { analyzeAndSaveTrack } from "@/lib/analysisMoodLib/analyzeAndSave";
+import { fetchUserCredits } from "@/lib/analysisMoodLib/creditsHelper";
 
 export default function Home() {
-  const {spotifyToken, connecting, setConnecting , setShowPrompt, supabaseJWT } = useSpotify();
+  const {spotifyToken, connecting, setConnecting , setShowPrompt, supabaseJWT, remainingCredits, setRemainingCredits } = useSpotify();
   const {selectedAnalysis, setSelectedAnalysis, showResults, setShowResults } = useMood();
 
   const [selectedTrackID, setSelectedTrackID] = useState<string | null>(null);
@@ -22,12 +23,14 @@ export default function Home() {
   const [moodAnalysis, setMoodAnalysis] = useState<AnalysisResult | null>(null);
   const [currentTrack, setCurrentTrack] = useState<{ name: string; artists: string } | null>(null);
   const [isPolling, setIsPolling] = useState(false);
+
   const manualStopRef = useRef(false)
 
   const analyzedTracks = useRef<Set<string>>(new Set());
   const pollingRef = useRef<NodeJS.Timeout | null>(null);
   const isAnalyzingRef = useRef(false);
 
+  //== LOGIN SPOTIFY ==
   const handleSpotifyClick = async () => {
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'spotify',
@@ -47,7 +50,7 @@ export default function Home() {
     setShowPrompt(false);
   }
   
-  // Clear state when needed 
+  // == RESET WHEN NEEDED ==
   const resetPlayback = useCallback(() => {
     analyzedTracks.current.clear();
     if (pollingRef.current) clearInterval(pollingRef.current);
@@ -62,7 +65,7 @@ export default function Home() {
     setShowResults(false);
   }, [setShowPrompt, setSelectedAnalysis, setShowResults]);
 
-  
+  // == STOP POLLING ==
   const stopPolling = useCallback(() => {
     if(pollingRef.current) {
       clearInterval(pollingRef.current)
@@ -71,7 +74,7 @@ export default function Home() {
     setIsPolling(false)
   }, [])
 
-  // Check current Spotify Playback
+  // == CHECK CURRENT SPOTIFY PLAYBACK ==
   const checkPlayback = useCallback(async () => {
     if (!spotifyToken || isAnalyzingRef.current) return;
 
@@ -106,13 +109,14 @@ export default function Home() {
     isAnalyzingRef.current = true;
     setLoading(true);
 
+    //Analyze and Save
     try {
-     const result = await analyzeAndSaveTrack(track, spotifyToken, supabaseJWT);
-
+      const {result, remainingCredits: updatedCredits} = await analyzeAndSaveTrack(track, spotifyToken, supabaseJWT);
       setMoodAnalysis(result);
       setShowResults(true);
       analyzedTracks.current.add(id);
-
+      setRemainingCredits(updatedCredits)
+      stopPolling()
     } catch (err) {
       console.error("Analysis error:", err);
       toast.error("Error analyzing the song mood! Please try again later.");
@@ -127,6 +131,7 @@ export default function Home() {
     }
   }, [spotifyToken, showResults, selectedTrackID, setShowPrompt, resetPlayback]);
 
+  //==START POLLING SONGS==
   const startPolling = useCallback(() => {
     if (pollingRef.current) return
     setIsPolling(true)
@@ -134,28 +139,27 @@ export default function Home() {
     checkPlayback()
   }, [checkPlayback])
 
-
   const handleAnalyzeAnotherSong = () => {
     resetPlayback()
     startPolling()
   }
   
-  //Poll track
+  //== POLLING EFFECT ==
   useEffect(() => {
     if (!spotifyToken || showResults || manualStopRef.current) return
 
     const handleVisibilityChange = () => {
-      if (document.hidden) stopPolling()
-      else startPolling()
+      if(!document.hidden && isPolling) {
+        checkPlayback()
+      }
     }
 
     document.addEventListener("visibilitychange", handleVisibilityChange)
 
     return () => {
-      stopPolling()
       document.removeEventListener("visibilitychange", handleVisibilityChange)
     }
-  }, [spotifyToken, showResults, startPolling, stopPolling])
+  }, [spotifyToken, showResults])
 
 
   // Hide prompt when a history item is selected
@@ -213,6 +217,16 @@ export default function Home() {
       {/* Analyze another song */}
       {spotifyToken && !loading && (moodAnalysis || selectedAnalysis) && (
         <SpotifyButton label="Analyze another song" onClick={handleAnalyzeAnotherSong} />
+      )}
+
+      {spotifyToken && remainingCredits !== null && (
+        remainingCredits > 0 ? (
+          <div className="text-sm text-muted-foreground">
+            Credits left today: <span className="font-semibold">{remainingCredits}</span>
+          </div>
+        ) : (
+          <p className="text-muted-foreground">No credits left today</p>
+        )
       )}
       
     </div>
