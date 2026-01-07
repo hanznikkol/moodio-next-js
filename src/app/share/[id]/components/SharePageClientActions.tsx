@@ -1,5 +1,4 @@
 "use client";
-
 import SpotifyButton from "@/app/main_components/Buttons/SpotifyButton";
 import { useRouter } from "next/navigation";
 

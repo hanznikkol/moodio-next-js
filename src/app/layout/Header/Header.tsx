@@ -119,7 +119,7 @@ export default function Header() {
         <ThemeToggleButton />
 
         {/* Profile */}
-        {profile && <ProfileMenu onOpenArchived={handleOpenArchive}/>}
+        {profile && <ProfileMenu archivedCount={archivedItems.length} onOpenArchived={handleOpenArchive}/>}
 
         {/* Github */}
         <a target="_blank" rel="noopener noreferrer" href="https://github.com/hanznikkol/moodio-next-js" className="hover:scale-110 duration-100 hover:cursor-pointer">
