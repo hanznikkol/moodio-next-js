@@ -7,6 +7,7 @@ export type RecommendedTrack = {
 };
 
 export type AnalysisResult = {
+  analysesId: string
   mood: string;
   explanation: string;
   colorPalette: string[];
@@ -23,3 +24,11 @@ export type PlaybackState = {
   moodAnalysis: AnalysisResult | null;
   loading: boolean;
 };
+
+export type Song = {
+  song_id: string;
+  name: string;
+  artist: string;
+  spotify_url: string | null;
+  preview_url: string | null;
+}

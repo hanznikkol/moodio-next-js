@@ -1,11 +1,10 @@
 "use client";
 import { createContext, createElement, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { SpotifyUserProfile } from "../spotifyTypes";
-import { getUserProfile, refreshAccessToken } from "../spotifyHelper";
-import { jwtDecode } from 'jwt-decode'
+import { getUserProfile } from "../spotifyHelper";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase/supabaseClient";
-import { AppJWTPayload, SpotifyContextType } from "./SpotifyContextTypes";
+import { SpotifyContextType } from "./SpotifyContextTypes";
 import { fetchUserCredits } from "@/lib/analysisMoodLib/creditsHelper";
 
 const SpotifyContext = createContext<SpotifyContextType | undefined>(undefined);
