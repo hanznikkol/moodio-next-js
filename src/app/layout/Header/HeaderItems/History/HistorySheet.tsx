@@ -1,7 +1,7 @@
 'use client'
 
 import { History, RefreshCw } from "lucide-react";
-import React, { useState, useRef, useMemo, useCallback, useEffect } from "react";
+import React, { useState, useRef, useMemo, useCallback } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { useSpotify } from "@/lib/spotifyLib/context/spotifyContext";
@@ -36,7 +36,7 @@ export default function HistorySheet({ supabaseUserId, onSelectHistory }: Histor
 
   const setHistoryAndCache = (updater: React.SetStateAction<MergedHistoryItem[]>) => {
     setHistory(prev => {
-      const newState = typeof updater === "function" ? (updater as Function)(prev) : updater;
+      const newState = typeof updater === "function" ? (updater as (prevState: MergedHistoryItem[]) => MergedHistoryItem[])(prev) : updater;
       historyCache.current = newState;
       return newState;
     });

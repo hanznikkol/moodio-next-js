@@ -1,4 +1,3 @@
-// app/api/database_server/get_archived/route.ts
 import { supabaseAdmin } from "@/lib/supabase/supabaseServer";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -33,6 +32,7 @@ export async function GET(req: NextRequest) {
 
     if (error) throw error;
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const formatted = data.map((item: any) => ({
       analyses_id: item.analyses_id,
       is_favorite: item.is_favorite,
@@ -49,8 +49,11 @@ export async function GET(req: NextRequest) {
     }));
 
     return NextResponse.json(formatted);
-  } catch (err: any) {
-    console.error("Archived History API error:", err);
-    return NextResponse.json({ error: err.message || "Server error" }, { status: 500 });
+  } catch (err: unknown) {
+    let message = "Server error";
+    if (err instanceof Error) message = err.message;
+
+    console.error("Error fetching archived data:", err);
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

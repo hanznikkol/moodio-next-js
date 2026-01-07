@@ -1,4 +1,4 @@
-import { Sparkles, Info } from "lucide-react"
+import { Sparkles } from "lucide-react"
 import React from "react"
 import HowToUse from "./FooterItems/HowToUse"
 

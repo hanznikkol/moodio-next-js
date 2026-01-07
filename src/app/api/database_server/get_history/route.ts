@@ -40,6 +40,7 @@ export async function GET(req: NextRequest) {
         
         if(error) return NextResponse.json({error: error.message}, {status: 500})
 
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const formatted = data.map((item: any) => ({
             analyses_id: item.analyses_id,
             is_favorite: item.is_favorite,
@@ -55,8 +56,11 @@ export async function GET(req: NextRequest) {
         }));
 
         return NextResponse.json(formatted)
-    } catch (err: any) {
+    } catch (err: unknown) {
+        let message = "Server error"
+        if (err instanceof Error) message = err.message;
+
         console.error("Error in API route:", err);
-        return NextResponse.json({ error: err.message || "Server error" }, { status: 500 });
+        return NextResponse.json({ error: message }, { status: 500 });
     }
 }

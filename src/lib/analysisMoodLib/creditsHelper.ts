@@ -14,7 +14,7 @@ export async function fetchUserCredits(supabaseJWT: string): Promise<number | nu
         }
         
         return null
-    } catch(err: any) {
+    } catch(err: unknown) {
         console.error("Failed to fetch user credits:", err);
         return null;
     }

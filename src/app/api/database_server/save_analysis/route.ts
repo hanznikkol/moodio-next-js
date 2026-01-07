@@ -48,6 +48,7 @@ export async function POST(req: NextRequest) {
 
     // Save recommended tracks
     if (analysisResult.recommendedTracks?.length) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const recs = analysisResult.recommendedTracks.map((r: any) => ({
         analyses_id: analysis.analyses_id,
         name: r.name,
@@ -112,8 +113,10 @@ export async function POST(req: NextRequest) {
     }
 
     return NextResponse.json({ saved: analysis, remainingCredits});
-  } catch (err: any) {
+  } catch (err: unknown) {
+    let message = "Server error"
+    if (err instanceof Error) message = err.message;
     console.error("Error in API route:", err);
-    return NextResponse.json({ error: err.message || "Server error" }, { status: 500 });
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

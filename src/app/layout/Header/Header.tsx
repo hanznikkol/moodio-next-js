@@ -1,8 +1,7 @@
 "use client";
-
 import { useSpotify } from '@/lib/spotifyLib/context/spotifyContext';
 import { FaGithub } from 'react-icons/fa'
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import ThemeToggleButton from '../../main_components/Buttons/ThemeToggleButton';
 import { MoodioSoloLogo } from '@/app/svg/moodio_solo';
 import ProfileMenu from './HeaderItems/ProfileMenu';
@@ -10,8 +9,9 @@ import HistorySheet from './HeaderItems/History/HistorySheet';
 import { useMood } from '@/lib/history/context/moodHistoryContext';
 import ArchiveList from './HeaderItems/History/ArchiveList';
 import { MergedHistoryItem } from '@/lib/history/historyTypes';
-import { archiveItem, deleteHistoryItem, fetchArchivedHistory, fetchHistoryBySpotifyId } from '@/lib/history/historyHelper';
+import { archiveItem, deleteHistoryItem, fetchArchivedHistory } from '@/lib/history/historyHelper';
 import { ConfirmDialog } from '@/app/main_components/Buttons/ConfirmDialog';
+import Link from 'next/link';
 
 export default function Header() {
   const { profile, userId } = useSpotify();
@@ -94,9 +94,9 @@ export default function Header() {
   <>
     <header className="fixed w-full top-0 right-0 flex items-center justify-between p-6 z-20">
       {/* Left */}
-      <a href="/" className="flex items-center">
+      <Link href="/" className="flex items-center">
         <MoodioSoloLogo className="h-8 w-auto md:h-10 xl:h-12" />
-      </a>
+      </Link>
       {/* Right */}
       <div className='flex items-center gap-4'>
 
@@ -119,7 +119,7 @@ export default function Header() {
         <ThemeToggleButton />
 
         {/* Profile */}
-        {profile && <ProfileMenu archivedCount={archivedItems.length} onOpenArchived={handleOpenArchive}/>}
+        {profile && <ProfileMenu onOpenArchived={handleOpenArchive}/>}
 
         {/* Github */}
         <a target="_blank" rel="noopener noreferrer" href="https://github.com/hanznikkol/moodio-next-js" className="hover:scale-110 duration-100 hover:cursor-pointer">

@@ -1,7 +1,6 @@
 import axios from "axios";
 import { SpotifyTrack, SpotifyUserProfile } from "./spotifyTypes";
 import { toast } from "sonner";
-import { supabase } from "../supabase/supabaseClient";
 
 // SAVE USER PROFILE
 export const upsertUser = async(profile: SpotifyUserProfile) => {
@@ -45,17 +44,25 @@ export const getCurrentTrack = async (accessToken: string): Promise<SpotifyTrack
     if (res.status === 204 || !res.data?.item || res.data.is_playing === false) {
       return null;
     }
-    const data = res.data;
+
+    const apiData = res.data.item as {
+      id: string;
+      name: string;
+      artists: { name: string }[];
+      external_urls: { spotify: string };
+      preview_url: string | null;
+    };
  
     const track: SpotifyTrack = {
-      id: data.item.id,
-      name: data.item.name,
-      artists: data.item.artists.map((a: any) => ({ name: a.name })),
-      external_urls: { spotify: data.item.external_urls.spotify },
-      preview_url: data.item.preview_url
-    }
+      id: apiData.id,
+      name: apiData.name,
+      artists: apiData.artists.map(a => ({ name: a.name })),
+      external_urls: { spotify: apiData.external_urls.spotify },
+      preview_url: apiData.preview_url ?? undefined,
+    };
 
-    return {... track, is_playing: data.is_playing ?? false}
+
+    return { ...track, is_playing: res.data.is_playing ?? false };
   } catch (err) {
     console.error("Error fetching current track:", err);
     toast.error("Error fetching current track!");

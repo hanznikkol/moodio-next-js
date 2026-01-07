@@ -1,5 +1,5 @@
 "use client";
-import { createContext, createElement, useCallback, useContext, useEffect, useRef, useState } from "react";
+import { createContext, createElement, useCallback, useContext, useEffect, useState } from "react";
 import { SpotifyUserProfile } from "../spotifyTypes";
 import { getUserProfile } from "../spotifyHelper";
 import { toast } from "sonner";
@@ -113,7 +113,7 @@ export const SpotifyProvider = ({children}: {children: React.ReactNode}) => {
       try {
         const credits = await fetchUserCredits(supabaseJWT)
         setRemainingCredits(credits ?? 0)
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error("Failed to get number of credits",err)
       }
     }

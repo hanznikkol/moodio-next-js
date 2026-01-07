@@ -1,6 +1,7 @@
 import axios from "axios";
 import { MergedHistoryItem, HistoryItem, SongHistoryRow } from "./historyTypes";
 import { supabase } from "../supabase/supabaseClient";
+import { RecommendedTrack } from "../analysisMoodLib/analysisResult";
 
 //Fetch History
 export const fetchHistoryBySpotifyId = async (spotifyId: string) => {
@@ -18,10 +19,10 @@ export const fetchAnalysisById = async (analysesId: string) => {
     colorPalette: raw.color_palette || [],
     lyrics: raw.lyrics ?? null,
     spotifyTrackId: raw.spotify_track_id,
-    recommendedTracks: (raw.recommended_tracks || []).map((t: any) => ({
+    recommendedTracks: (raw.recommended_tracks || []).map((t: RecommendedTrack) => ({
       id: t.id,
       name: t.name,
-      artist: t.artists,
+      artist: t.artist,
       note: t.note,
       image: t.image,
       uri: t.uri,

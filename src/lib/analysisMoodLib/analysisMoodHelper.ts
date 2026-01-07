@@ -18,17 +18,22 @@ export async function analyzeMood(artist: string, songTitle: string, spotifyToke
     cache.set(key, data)
     return data;
 
-  } catch (error: any){
-    if (error.response?.status === 503) {
-      toast.warning("AI server is busy. Please try again later.");
-      throw new Error("AI server is busy. Please try again later.");
-    }
-    if (error.response?.status === 429) {
-      toast.error("Rate limit exceeded. Please wait before trying again.");
-      throw new Error("Rate limit exceeded. Please try again later.");
+  } catch (error: unknown){
+    if (axios.isAxiosError(error)) {
+      if (error.response?.status === 503) {
+        toast.warning("AI server is busy. Please try again later.");
+        throw new Error("AI server is busy. Please try again later.");
+      }
+      if (error.response?.status === 429) {
+        toast.error("Rate limit exceeded. Please wait before trying again.");
+        throw new Error("Rate limit exceeded. Please try again later.");
+      }
     }
 
-    console.error("Error analyzing mood:", error);
+    let message = "Error analyzing mood";
+    if (error instanceof Error) message = error.message;
+
+    console.error(message, error);
     throw error;
   }
 }

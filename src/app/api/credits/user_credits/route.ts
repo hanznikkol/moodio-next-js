@@ -25,7 +25,7 @@ export async function GET(req: NextRequest) {
 
         if (!creditData) {
         // Create row for old users
-            const { data: newCreditData, error: insertError } = await supabaseClientJWT
+            const { error: insertError } = await supabaseClientJWT
                 .from("daily_user_credits")
                 .insert({
                     user_id: userId,
@@ -43,8 +43,11 @@ export async function GET(req: NextRequest) {
         const remainingCredits = Math.max(DAILY_LIMIT - usedCount, 0)
 
         return NextResponse.json({ remainingCredits });
-    } catch (err: any) {
+    } catch (err: unknown) {
+        let message = "Server error";
+        if (err instanceof Error) message = err.message;
+
         console.error("Error fetching user credits:", err);
-        return NextResponse.json({ error: err.message || "Server error" }, { status: 500 });
+        return NextResponse.json({ error: message }, { status: 500 });
     } 
 }

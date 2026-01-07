@@ -40,7 +40,7 @@ import { SpotifyTrack } from "../spotifyLib/spotifyTypes";
 
      return {result: {...result, analysesId}, remainingCredits: res.data.remainingCredits}
      
-    } catch (err: any) {
+    } catch (err: unknown) {
       if (axios.isAxiosError(err)) {
         const status = err.response?.status
         const message = err.response?.data.error ?? err.message ?? "Failed to save analysis"

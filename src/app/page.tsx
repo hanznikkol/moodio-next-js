@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState, useRef, useCallback, useMemo } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import SpotifyButton from "./main_components/Buttons/SpotifyButton";
 import { toast } from "sonner";
 import type { AnalysisResult } from "@/lib/analysisMoodLib/analysisResult";
@@ -31,7 +31,7 @@ export default function Home() {
 
   //== LOGIN SPOTIFY ==
   const handleSpotifyClick = async () => {
-    const { data, error } = await supabase.auth.signInWithOAuth({
+    const { error } = await supabase.auth.signInWithOAuth({
       provider: 'spotify',
       options: {
         scopes: 'user-read-private user-read-playback-state user-read-currently-playing user-top-read',
