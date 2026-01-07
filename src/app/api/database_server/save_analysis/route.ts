@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
 import { getSupabaseClientWithJWT, getUserIdFromJWT } from "@/lib/supabase/supabaseClientHelper";
 import { DAILY_LIMIT } from "@/lib/config/creditsLimit";
 

@@ -36,7 +36,9 @@ import { SpotifyTrack } from "../spotifyLib/spotifyTypes";
         }
      })
 
-     return {result, remainingCredits: res.data.remainingCredits}
+     const analysesId = res.data.saved.analyses_id
+
+     return {result: {...result, analysesId}, remainingCredits: res.data.remainingCredits}
      
     } catch (err: any) {
       if (axios.isAxiosError(err)) {

@@ -135,6 +135,7 @@ export default function HistorySheet({ supabaseUserId, onSelectHistory }: Histor
       const analysisFromApi = await fetchAnalysisById(item.analyses_id)
 
       const analysis: AnalysisResult = {
+        analysesId: item.analyses_id,
         ...analysisFromApi,
         trackName: item.songs?.name ?? "Unknown",
         trackArtist: item.songs?.artist ?? "Unknown",

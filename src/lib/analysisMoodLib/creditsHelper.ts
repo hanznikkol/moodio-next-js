@@ -19,26 +19,3 @@ export async function fetchUserCredits(supabaseJWT: string): Promise<number | nu
         return null;
     }
 }
-
-export async function consumeCredits(supabaseJWT: string): Promise<number> {
-    try {
-        const res = await axios.post("/api/credits/consume_credits", {}, {
-            headers: {
-                Authorization: `Bearer ${supabaseJWT}`
-            }
-        })
-
-        console.log("consumeCredits response", res.data);
-
-        if (res.data?.remainingCredits === undefined) {
-            throw new Error("Invalid response from server");
-        }
-
-        return res.data.remainingCredits;
-    } catch(err) {
-        if (axios.isAxiosError(err) && err.response?.status === 403) {
-          throw new Error("Daily credit limit");
-        } 
-        throw err
-    }
-}

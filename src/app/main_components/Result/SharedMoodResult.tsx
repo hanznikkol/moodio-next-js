@@ -5,14 +5,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import RecommendedTracksList from "./ResultComponents/RecommendedTracksList";
 import ColorPaletteComponent from "./ResultComponents/ColorPaletteComponent";
-import ShareResultIcons from "./ResultComponents/ShareResultIcons";
 
-interface MoodResultProps {
+interface SharedMoodResultProps {
   analysis: AnalysisResult;
 }
 
-export default function MoodResult({ analysis }: MoodResultProps) {
-  const shareUrl = typeof window !== "undefined" ? `${window.location.origin}/share/${analysis.analysesId}` : ""
+export default function SharedMoodResult({ analysis }: SharedMoodResultProps) {
   const palettes = analysis?.colorPalette || []
 
   return (
@@ -42,9 +40,6 @@ export default function MoodResult({ analysis }: MoodResultProps) {
         {analysis.recommendedTracks?.length > 0 && (
           <RecommendedTracksList tracks={analysis.recommendedTracks}/>
         )}
-
-        {/* Share with friends */}
-        <ShareResultIcons shareUrl={shareUrl}/>
 
     </CardContent>
 

@@ -12,7 +12,6 @@ import PlayPromptButton from "./main_components/Buttons/PlayPromptButton";
 import { useMood } from "@/lib/history/context/moodHistoryContext";
 import { supabase } from "@/lib/supabase/supabaseClient";
 import { analyzeAndSaveTrack } from "@/lib/analysisMoodLib/analyzeAndSave";
-import { fetchUserCredits } from "@/lib/analysisMoodLib/creditsHelper";
 
 export default function Home() {
   const {spotifyToken, connecting, setConnecting , setShowPrompt, supabaseJWT, remainingCredits, setRemainingCredits } = useSpotify();
