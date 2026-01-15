@@ -35,7 +35,6 @@ export default function Home() {
       provider: 'spotify',
       options: {
         scopes: 'user-read-private user-read-playback-state user-read-currently-playing user-top-read',
-        redirectTo: process.env.NEXT_PUBLIC_BASE_URL!
       }
     })
 
